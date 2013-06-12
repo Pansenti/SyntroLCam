@@ -20,6 +20,7 @@
 #include <termios.h>
 #include <unistd.h>
 #include <signal.h>
+#include <errno.h>
 
 #include "SyntroLCamConsole.h"
 #include "V4LCam.h"
@@ -38,10 +39,15 @@ SyntroLCamConsole::SyntroLCamConsole(QSettings *settings, bool daemonMode, QObje
 	m_frameCount = 0;
 	m_frameRateTimer = 0;
 	m_camera = NULL;
+	m_client = NULL;
 
 	if (m_daemonMode) {
 		registerSigHandler();
-		daemon(1, 1);
+		
+		if (daemon(1, 1)) {
+			perror("daemon");
+			return;
+		}
 	}
 
 	connect((QCoreApplication *)parent, SIGNAL(aboutToQuit()), this, SLOT(aboutToQuit()));
