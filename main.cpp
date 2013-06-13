@@ -18,7 +18,6 @@
 //
 
 #include <QApplication>
-#include <unistd.h>
 
 #include "SyntroLib.h"
 #include "SyntroLCam.h"
@@ -66,8 +65,6 @@ int runConsoleApp(int argc, char **argv)
 
 QSettings *loadSettings(QStringList arglist)
 {
-	char host[32];
-
 	QSettings *settings = loadStandardSettings(PRODUCT_TYPE, arglist);
 
 	// app-specific defaults
@@ -76,15 +73,8 @@ QSettings *loadSettings(QStringList arglist)
 
 	settings->beginGroup("Camera");
 
-	if (!settings->contains(SYNTRO_CAMERA_STREAMNAME)
-			|| settings->value(SYNTRO_CAMERA_STREAMNAME).toString().length() == 0) {
-		memset(host, 0, sizeof(host));
-
-		if (!gethostname(host, sizeof(host) - 1))
-			settings->setValue(SYNTRO_CAMERA_STREAMNAME, host);
-		else
-			settings->setValue(SYNTRO_CAMERA_STREAMNAME, "Video");
-	}
+	if (!settings->contains(SYNTRO_CAMERA_STREAMNAME))
+		settings->setValue(SYNTRO_CAMERA_STREAMNAME, SYNTRO_STREAMNAME_VIDEO);
 
 	if (!settings->contains(SYNTRO_CAMERA_CAMERA))
 		settings->setValue(SYNTRO_CAMERA_CAMERA, 0);
