@@ -1,5 +1,5 @@
 //
-//  Copyright (c) 2012 Pansenti, LLC.
+//  Copyright (c) 2013 Pansenti, LLC.
 //	
 //  This file is part of Syntro
 //
@@ -25,8 +25,6 @@
 
 //		Settings keys
 
-#define	SYNTRO_CAMERA_STREAMNAME	"streamName"
-#define	SYNTRO_CAMERA_PTZNAME		"PTZName"
 #define	SYNTRO_CAMERA_CAMERA		"device"
 #define	SYNTRO_CAMERA_WIDTH			"width"
 #define	SYNTRO_CAMERA_HEIGHT		"height"

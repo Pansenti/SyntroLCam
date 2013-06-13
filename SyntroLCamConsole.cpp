@@ -1,5 +1,5 @@
 //
-//  Copyright (c) 2012 Pansenti, LLC.
+//  Copyright (c) 2013 Pansenti, LLC.
 //
 //  This file is part of Syntro
 //
@@ -52,7 +52,7 @@ SyntroLCamConsole::SyntroLCamConsole(QSettings *settings, bool daemonMode, QObje
 
 	connect((QCoreApplication *)parent, SIGNAL(aboutToQuit()), this, SLOT(aboutToQuit()));
 
-	syntroAppInit(m_settings);
+    SyntroUtils::syntroAppInit(m_settings);
 
 	m_client = new CamClient(this, m_settings);
 	m_client->resumeThread();
@@ -181,7 +181,7 @@ void SyntroLCamConsole::run()
 		runConsole();
 
 	m_client->exitThread();
-	syntroAppExit();
+    SyntroUtils::syntroAppExit();
 	QCoreApplication::exit();
 }
 

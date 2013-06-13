@@ -1,5 +1,5 @@
 //
-//  Copyright (c) 2012 Pansenti, LLC.
+//  Copyright (c) 2013 Pansenti, LLC.
 //	
 //  This file is part of Syntro
 //
@@ -50,25 +50,19 @@ void CamClient::sendFrame()
 
 void CamClient::videoHeaderInit(SYNTRO_RECORD_VIDEO *videoHead, int width, int height, int size)
 {
-	convertIntToUC2(SYNTRO_RECORD_TYPE_VIDEO, videoHead->recordHeader.type);
-	convertIntToUC2(SYNTRO_RECORD_TYPE_VIDEO_MJPEG, videoHead->recordHeader.subType);
-	convertIntToUC2(sizeof(SYNTRO_RECORD_VIDEO), videoHead->recordHeader.headerLength);
+    SyntroUtils::convertIntToUC2(SYNTRO_RECORD_TYPE_VIDEO, videoHead->recordHeader.type);
+    SyntroUtils::convertIntToUC2(SYNTRO_RECORD_TYPE_VIDEO_MJPEG, videoHead->recordHeader.subType);
+    SyntroUtils::convertIntToUC2(sizeof(SYNTRO_RECORD_VIDEO), videoHead->recordHeader.headerLength);
 
-	convertIntToUC2(width, videoHead->width);
-	convertIntToUC2(height, videoHead->height);
-	setSyntroTimestamp(&(videoHead->recordHeader.timestamp));
-	convertIntToUC4(size, videoHead->size);
+    SyntroUtils::convertIntToUC2(width, videoHead->width);
+    SyntroUtils::convertIntToUC2(height, videoHead->height);
+    SyntroUtils::setSyntroTimestamp(&(videoHead->recordHeader.timestamp));
+    SyntroUtils::convertIntToUC4(size, videoHead->size);
 }
 
 void CamClient::appClientInit()
 {
-	QString streamName;
-
-	m_settings->beginGroup("Camera");
-	streamName = m_settings->value(SYNTRO_CAMERA_STREAMNAME).toString();
-	m_settings->endGroup();
-
-	m_cameraPort = clientAddService(streamName, SERVICETYPE_MULTICAST, true);
+    m_cameraPort = clientAddService(SYNTRO_STREAMNAME_VIDEO, SERVICETYPE_MULTICAST, true);
 	m_width = 0;
 	m_height = 0;
 }

@@ -1,5 +1,5 @@
 //
-//  Copyright (c) 2012 Pansenti, LLC.
+//  Copyright (c) 2013 Pansenti, LLC.
 //
 //  This file is part of Syntro
 //
@@ -44,7 +44,7 @@ SyntroLCam::SyntroLCam(QSettings *settings, QWidget *parent)
 	ui.actionStop->setEnabled(false);
 	ui.actionStart->setEnabled(true);
 
-	syntroAppInit(m_settings);
+    SyntroUtils::syntroAppInit(m_settings);
 	m_client = new CamClient(this, m_settings);
 	m_client->resumeThread();
 	
@@ -88,7 +88,7 @@ void SyntroLCam::closeEvent(QCloseEvent *)
 	m_client->exitThread();
 
 	saveWindowState();
-	syntroAppExit();
+    SyntroUtils::syntroAppExit();
 }
 
 bool SyntroLCam::createCamera()

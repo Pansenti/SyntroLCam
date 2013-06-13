@@ -1,5 +1,5 @@
 //
-//  Copyright (c) 2012 Pansenti, LLC.
+//  Copyright (c) 2013 Pansenti, LLC.
 //
 //  This file is part of Syntro
 //
@@ -31,7 +31,7 @@ QSettings *loadSettings(QStringList arglist);
 
 int main(int argc, char *argv[])
 {
-	if (checkConsoleModeFlag(argc, argv))
+    if (SyntroUtils::checkConsoleModeFlag(argc, argv))
 		return runConsoleApp(argc, argv);
 	else
 		return runGuiApp(argc, argv);
@@ -54,7 +54,7 @@ int runConsoleApp(int argc, char **argv)
 {
 	QCoreApplication a(argc, argv);
 
-	bool daemonMode = checkDaemonModeFlag(argc, argv);
+    bool daemonMode = SyntroUtils::checkDaemonModeFlag(argc, argv);
 
 	QSettings *settings = loadSettings(a.arguments());
 
@@ -65,16 +65,13 @@ int runConsoleApp(int argc, char **argv)
 
 QSettings *loadSettings(QStringList arglist)
 {
-	QSettings *settings = loadStandardSettings(PRODUCT_TYPE, arglist);
+    QSettings *settings = SyntroUtils::loadStandardSettings(PRODUCT_TYPE, arglist);
 
 	// app-specific defaults
 
 	settings->setValue(SYNTRO_PARAMS_COMPTYPE, "SyntroLCam");
 
 	settings->beginGroup("Camera");
-
-	if (!settings->contains(SYNTRO_CAMERA_STREAMNAME))
-		settings->setValue(SYNTRO_CAMERA_STREAMNAME, SYNTRO_STREAMNAME_VIDEO);
 
 	if (!settings->contains(SYNTRO_CAMERA_CAMERA))
 		settings->setValue(SYNTRO_CAMERA_CAMERA, 0);
