@@ -29,7 +29,7 @@ class SyntroLCamConsole : public QThread
 	Q_OBJECT
 
 public:
-    SyntroLCamConsole(QSettings *settings, bool daemonMode, QObject *parent);
+    SyntroLCamConsole(bool daemonMode, QObject *parent);
 
 public slots:
 	void cameraState(QString);
@@ -53,8 +53,6 @@ private:
 	void registerSigHandler();
 	static void sigHandler(int sig);
 
-	QSettings *m_settings;
-
 	CamClient *m_client;
 	V4LCam *m_camera;
 
@@ -64,6 +62,8 @@ private:
 	double m_frameRate;
 	bool m_daemonMode;
 	static volatile bool sigIntReceived;
+
+    QString m_logTag;
 };
 
 #endif // SYNTROLCAMCONSOLE_H

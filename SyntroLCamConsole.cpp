@@ -29,10 +29,10 @@
 
 volatile bool SyntroLCamConsole::sigIntReceived = false;
 
-SyntroLCamConsole::SyntroLCamConsole(QSettings *settings, bool daemonMode, QObject *parent)
+SyntroLCamConsole::SyntroLCamConsole(bool daemonMode, QObject *parent)
 	: QThread(parent)
 {
-	m_settings = settings;
+    m_logTag = "LCamConsole";
 	m_daemonMode = daemonMode;
 
 	m_frameRate = 0.0;
@@ -52,9 +52,9 @@ SyntroLCamConsole::SyntroLCamConsole(QSettings *settings, bool daemonMode, QObje
 
 	connect((QCoreApplication *)parent, SIGNAL(aboutToQuit()), this, SLOT(aboutToQuit()));
 
-    SyntroUtils::syntroAppInit(m_settings);
+    SyntroUtils::syntroAppInit();
 
-	m_client = new CamClient(this, m_settings);
+    m_client = new CamClient(this);
 	m_client->resumeThread();
 
 	start();
@@ -78,7 +78,7 @@ bool SyntroLCamConsole::createCamera()
 		m_camera = NULL;
 	}
 
-	m_camera = new V4LCam(m_settings);
+    m_camera = new V4LCam();
 
 	if (!m_camera)
 		return false;
@@ -98,7 +98,7 @@ bool SyntroLCamConsole::startVideo()
 	if (!m_daemonMode) {
 		connect(m_camera, SIGNAL(cameraState(QString)), this, SLOT(cameraState(QString)), Qt::DirectConnection);
 		connect(m_camera, SIGNAL(newFrame()), this, SLOT(newFrame()), Qt::DirectConnection);
-	}
+    }
 
 	connect(m_camera, SIGNAL(pixelFormat(quint32)), m_client, SLOT(pixelFormat(quint32)));
 	connect(m_camera, SIGNAL(frameSize(int,int)), m_client, SLOT(frameSize(int,int)));
@@ -146,11 +146,12 @@ void SyntroLCamConsole::cameraState(QString state)
 
 void SyntroLCamConsole::newFrame()
 {
-	m_frameCount++;
+    m_frameCount++;
 }
 
 void SyntroLCamConsole::timerEvent(QTimerEvent *)
 {
+    printf("Here");
 	m_frameRate =  (double)m_frameCount / (double)FRAME_RATE_TIMER_INTERVAL;
 	m_frameCount = 0;
 }
@@ -180,7 +181,7 @@ void SyntroLCamConsole::run()
 	else
 		runConsole();
 
-	m_client->exitThread();
+    m_client->exitThread();
     SyntroUtils::syntroAppExit();
 	QCoreApplication::exit();
 }

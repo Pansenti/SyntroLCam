@@ -26,7 +26,6 @@
 
 int runGuiApp(int argc, char **);
 int runConsoleApp(int argc, char **);
-QSettings *loadSettings(QStringList arglist);
 
 
 int main(int argc, char *argv[])
@@ -41,9 +40,9 @@ int runGuiApp(int argc, char **argv)
 {
 	QApplication a(argc, argv);
 
-	QSettings *settings = loadSettings(a.arguments());
+    SyntroUtils::loadStandardSettings(PRODUCT_TYPE, a.arguments());
 
-	SyntroLCam *w = new SyntroLCam(settings);
+    SyntroLCam *w = new SyntroLCam();
 
 	w->show();
 
@@ -56,40 +55,10 @@ int runConsoleApp(int argc, char **argv)
 
     bool daemonMode = SyntroUtils::checkDaemonModeFlag(argc, argv);
 
-	QSettings *settings = loadSettings(a.arguments());
+    SyntroUtils::loadStandardSettings(PRODUCT_TYPE, a.arguments());
 
-	SyntroLCamConsole console(settings, daemonMode, &a);
+    SyntroLCamConsole console(daemonMode, &a);
 
 	return a.exec();
-}
-
-QSettings *loadSettings(QStringList arglist)
-{
-    QSettings *settings = SyntroUtils::loadStandardSettings(PRODUCT_TYPE, arglist);
-
-	// app-specific defaults
-
-	settings->setValue(SYNTRO_PARAMS_COMPTYPE, "SyntroLCam");
-
-	settings->beginGroup("Camera");
-
-	if (!settings->contains(SYNTRO_CAMERA_CAMERA))
-		settings->setValue(SYNTRO_CAMERA_CAMERA, 0);
-
-	if (!settings->contains(SYNTRO_CAMERA_WIDTH))
-		settings->setValue(SYNTRO_CAMERA_WIDTH, 640);
-
-	if (!settings->contains(SYNTRO_CAMERA_HEIGHT))
-		settings->setValue(SYNTRO_CAMERA_HEIGHT, 480);
-
-	if (!settings->contains(SYNTRO_CAMERA_FRAMERATE))
-		settings->setValue(SYNTRO_CAMERA_FRAMERATE, 30);
-
-	if (!settings->contains(SYNTRO_CAMERA_FORMAT))
-		settings->setValue(SYNTRO_CAMERA_FORMAT, "MJPG");
-
-	settings->endGroup();
-
-	return settings;
 }
 

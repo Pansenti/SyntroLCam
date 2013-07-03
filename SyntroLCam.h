@@ -34,7 +34,7 @@ class SyntroLCam : public QMainWindow
 	Q_OBJECT
 
 public:
-	SyntroLCam(QSettings *settings, QWidget *parent = 0);
+    SyntroLCam();
 	~SyntroLCam();
 
 public slots:
@@ -45,6 +45,10 @@ public slots:
 	void frameSize(int width, int height);
 	void newJPEG(QByteArray);
 	void newImage(QImage);
+
+signals:
+    void startCapture();
+    void stopCapture();
 
 protected:
 	void timerEvent(QTimerEvent *event);
@@ -74,8 +78,6 @@ private:
 	QMutex m_frameQMutex;
 	QQueue <QByteArray> m_jpegFrameQ;
 	QQueue <QImage> m_imgFrameQ;
-
-	QSettings *m_settings;
 
 	int m_frameRateTimer;
 	int m_frameRefreshTimer;

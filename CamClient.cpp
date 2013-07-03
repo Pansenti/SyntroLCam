@@ -23,8 +23,8 @@
 
 #define	CAMERA_IMAGE_INTERVAL	((qint64)SYNTRO_CLOCKS_PER_SEC/60)
 
-CamClient::CamClient(QObject *parent, QSettings *settings)
-		: Endpoint(parent, settings, CAMERA_IMAGE_INTERVAL)
+CamClient::CamClient(QObject *)
+    : Endpoint(CAMERA_IMAGE_INTERVAL, "LCam")
 {
 }
 

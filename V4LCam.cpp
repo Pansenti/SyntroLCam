@@ -40,8 +40,9 @@
 #define MAX_CONSECUTIVE_BAD_FRAMES 50
 
 
-V4LCam::V4LCam(QSettings *settings)
+V4LCam::V4LCam() : SyntroThread("V4LCam", "SyntroLCam")
 {
+    m_logTag = "V4LCam";
 	m_fd = -1;
 	m_consecutiveBadFrames = 0;
 	m_cameraNum = DEFAULT_CAMERA;
@@ -52,29 +53,42 @@ V4LCam::V4LCam(QSettings *settings)
 	m_mmBuffLen = 0;
 	m_rgbBuff = NULL;
 
-	if (settings) {
-		settings->beginGroup("Camera");
+    QSettings *settings = SyntroUtils::getSettings();
 
-		m_cameraNum = settings->value(SYNTRO_CAMERA_CAMERA, DEFAULT_CAMERA).toInt();
-		m_preferredWidth = settings->value(SYNTRO_CAMERA_WIDTH, DEFAULT_WIDTH).toInt();
-		m_preferredHeight = settings->value(SYNTRO_CAMERA_HEIGHT, DEFAULT_HEIGHT).toInt();
-		m_preferredFrameRate = settings->value(SYNTRO_CAMERA_FRAMERATE, MAXIMUM_RATE).toInt();
+    settings->beginGroup("Camera");
 
-		QString format = settings->value(SYNTRO_CAMERA_FORMAT, "MJPG").toString().toUpper();
+    if (!settings->contains(SYNTRO_CAMERA_CAMERA))
+        settings->setValue(SYNTRO_CAMERA_CAMERA, DEFAULT_CAMERA);
 
-		if (format == "YUYV")
-			m_preferredFormat = V4L2_PIX_FMT_YUYV;
-		else
-			m_preferredFormat = V4L2_PIX_FMT_MJPEG;
+    if (!settings->contains(SYNTRO_CAMERA_WIDTH))
+        settings->setValue(SYNTRO_CAMERA_WIDTH, DEFAULT_WIDTH);
 
-			settings->endGroup();
-	}
-	else {
-		m_preferredWidth = DEFAULT_WIDTH;
-		m_preferredHeight = DEFAULT_HEIGHT;
-		m_preferredFrameRate = MAXIMUM_RATE;
-		m_preferredFormat = V4L2_PIX_FMT_MJPEG;
-	}
+    if (!settings->contains(SYNTRO_CAMERA_HEIGHT))
+        settings->setValue(SYNTRO_CAMERA_HEIGHT, DEFAULT_HEIGHT);
+
+    if (!settings->contains(SYNTRO_CAMERA_FRAMERATE))
+        settings->setValue(SYNTRO_CAMERA_FRAMERATE, MAXIMUM_RATE);
+
+    if (!settings->contains(SYNTRO_CAMERA_FORMAT))
+        settings->setValue(SYNTRO_CAMERA_FORMAT, "MJPG");
+
+
+    m_cameraNum = settings->value(SYNTRO_CAMERA_CAMERA).toInt();
+    m_preferredWidth = settings->value(SYNTRO_CAMERA_WIDTH).toInt();
+    m_preferredHeight = settings->value(SYNTRO_CAMERA_HEIGHT).toInt();
+    m_preferredFrameRate = settings->value(SYNTRO_CAMERA_FRAMERATE).toInt();
+
+    QString format = settings->value(SYNTRO_CAMERA_FORMAT).toString().toUpper();
+
+    if (format == "YUYV")
+        m_preferredFormat = V4L2_PIX_FMT_YUYV;
+    else
+        m_preferredFormat = V4L2_PIX_FMT_MJPEG;
+
+    settings->endGroup();
+
+    delete settings;
+
 }
 
 V4LCam::~V4LCam()
@@ -263,64 +277,71 @@ QImage V4LCam::YUYV2RGB(quint32 index)
 #define DETECT_MIN_TICKS        10
 #define CONNECT_MIN_TICKS       6
 
-void V4LCam::run()
+void V4LCam::initThread()
 {
-	int state, ticks;
+    // optimize the typical case on startup
+    if (deviceExists() && openDevice()) {
+        m_state = STATE_CONNECTED;
+        emit cameraState("Connected");
+        m_ticks = CONNECT_MIN_TICKS;
+    } else {
+        m_state = STATE_DISCONNECTED;
+        m_ticks = 0;
+        emit cameraState("Disconnected");
+    }
+    m_timer = startTimer(25);
+}
 
-	// optimize the typical case on startup
-	if (deviceExists() && openDevice()) {
-		state = STATE_CONNECTED;
-		emit cameraState("Connected");
-		ticks = CONNECT_MIN_TICKS;
-	}
-	else {
-		state = STATE_DISCONNECTED;
-		ticks = 0;
-		emit cameraState("Disconnected");
-	}
+void V4LCam::finishThread()
+{
+    streamOff();
+    closeDevice();
+    emit cameraState("Disconnected");
+}
 
-	while (!m_stopTime) {
-		switch (state) {
+void V4LCam::timerEvent(QTimerEvent *)
+{
+    switch (m_state) {
 		case STATE_DISCONNECTED:
-			if (++ticks > DISCONNECT_MIN_TICKS) {
+            if (++m_ticks > DISCONNECT_MIN_TICKS) {
 				if (deviceExists()) {
-					state = STATE_DETECTED;
+                    m_state = STATE_DETECTED;
 					emit cameraState("Detected");
-					ticks = 0;
+                    m_ticks = 0;
 				}
 			}
 
-			msleep(TICK_DURATION_MS);
+            thread()->msleep(TICK_DURATION_MS);
 			break;
 
 		case STATE_DETECTED:
-			if (++ticks > DETECT_MIN_TICKS) {
+            if (++m_ticks > DETECT_MIN_TICKS) {
 				if (openDevice()) {
-					state = STATE_CONNECTED;
+                    m_state = STATE_CONNECTED;
 					emit cameraState("Connected");
-					ticks = 0;
+                    m_ticks = 0;
 				}
 			}
 
-			msleep(TICK_DURATION_MS);
+            thread()->msleep(TICK_DURATION_MS);
 			break;
 
 		case STATE_CONNECTED:
-			if (++ticks <= CONNECT_MIN_TICKS) {
-				msleep(TICK_DURATION_MS);
+            if (++m_ticks <= CONNECT_MIN_TICKS) {
+                thread()->msleep(TICK_DURATION_MS);
 				break;
 			}
 
 			if (streamOn()) {
-				state = STATE_CAPTURING;
+                m_state = STATE_CAPTURING;
 				emit cameraState("Running");
 			}
 			else {
 				closeDevice();
-				state = STATE_DISCONNECTED;
+                m_state = STATE_DISCONNECTED;
 				emit cameraState("Disconnected");
-				ticks = 0;
-				msleep(TICK_DURATION_MS);
+                m_ticks = 0;
+                thread()->msleep(TICK_DURATION_MS);
 			}
 
 			break;
@@ -329,19 +350,14 @@ void V4LCam::run()
 			if (!readFrame()) {
 				streamOff();
 				closeDevice();
-				state = STATE_DISCONNECTED;
-				ticks = 0;
+                m_state = STATE_DISCONNECTED;
+                m_ticks = 0;
 				emit cameraState("Disconnected");
-				msleep(TICK_DURATION_MS);
+                thread()->msleep(TICK_DURATION_MS);
 			}
 
 			break;
-		}
 	}
-
-	streamOff();
-	closeDevice();
-	emit cameraState("Disconnected");
 }
 
 bool V4LCam::readFrame()
@@ -359,8 +375,7 @@ bool V4LCam::readFrame()
 	if (result == -1) {
 		if (errno == EINTR) {
 			return true;
-		}
-		else {
+        } else {
 			logError(QString("select - %1").arg(strerror(errno)));
 			return false;
 		}
@@ -901,17 +916,12 @@ bool V4LCam::isDeviceOpen()
 
 void V4LCam::startCapture()
 {
-	m_stopTime = false;
-
-	start();
+    resumeThread();
 }
 
 void V4LCam::stopCapture()
 {
-	m_stopTime = true;
-
-	while (isRunning())
-		wait(100);
+    exitThread();
 }
 
 QSize V4LCam::getImageSize()

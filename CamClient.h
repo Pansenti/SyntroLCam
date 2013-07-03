@@ -36,7 +36,7 @@ class CamClient : public Endpoint
 	Q_OBJECT
 
 public:
-	CamClient(QObject *parent, QSettings *settings);
+    CamClient(QObject *parent);
 	virtual ~CamClient() {}
 
 public slots:

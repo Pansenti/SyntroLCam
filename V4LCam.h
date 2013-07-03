@@ -20,7 +20,7 @@
 #ifndef V4LCAM_H
 #define V4LCAM_H
 
-#include <QThread>
+#include "SyntroLib.h"
 #include <QSize>
 #include <QSettings>
 #include <qimage.h>
@@ -30,20 +30,23 @@
 #define HUFFMAN_TABLE_SIZE 420
 #define AVI_HEADER_SIZE 37
 
-class V4LCam : public QThread
+class V4LCam : public SyntroThread
 {
 	Q_OBJECT
 
 public:
-	V4LCam(QSettings *settings = NULL);
+    V4LCam();
 	virtual ~V4LCam();
 
 	bool deviceExists();
 	bool isDeviceOpen();
-	void startCapture();
-	void stopCapture();
 
 	QSize getImageSize();
+
+public slots:
+    void startCapture();
+    void stopCapture();
+
 
 signals:
 	void pixelFormat(quint32 format);
@@ -54,7 +57,9 @@ signals:
 	void cameraState(QString state);
 
 protected:
-	void run();
+    void initThread();
+    void finishThread();
+    void timerEvent(QTimerEvent *event);
 
 private:
 	bool openDevice();
@@ -86,7 +91,6 @@ private:
 	static bool frameSizeLessThan(const QSize &a, const QSize &b);
 	static bool frameRateLessThan(const QSize &a, const QSize &b);
 
-	bool m_stopTime;
 	quint32 m_preferredFormat;
 	int m_preferredWidth;
 	int m_preferredHeight;
@@ -112,6 +116,12 @@ private:
 	QList<quint32> m_formatList;
 	QList<QSize> m_sizeList;
 	QList<QSize> m_rateList;
+
+    QString m_logTag;
+
+    int m_timer;
+    int m_state;
+    int m_ticks;
 };
 
 #endif // V4LCAM_H

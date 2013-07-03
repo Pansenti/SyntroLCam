@@ -22,8 +22,8 @@
 
 #define FRAME_RATE_TIMER_INTERVAL 2
 
-SyntroLCam::SyntroLCam(QSettings *settings, QWidget *parent)
-	: QMainWindow(parent), m_settings(settings)
+SyntroLCam::SyntroLCam()
+    : QMainWindow()
 {
 	ui.setupUi(this);
 
@@ -44,15 +44,15 @@ SyntroLCam::SyntroLCam(QSettings *settings, QWidget *parent)
 	ui.actionStop->setEnabled(false);
 	ui.actionStart->setEnabled(true);
 
-    SyntroUtils::syntroAppInit(m_settings);
-	m_client = new CamClient(this, m_settings);
+    SyntroUtils::syntroAppInit();
+    m_client = new CamClient(this);
 	m_client->resumeThread();
 	
 	restoreWindowState();
 
 	setWindowTitle(QString("%1 - %2")
-		.arg(m_settings->value(SYNTRO_PARAMS_APPNAME).toString())
-		.arg(m_settings->value(SYNTRO_PARAMS_COMPTYPE).toString()));
+                   .arg(SyntroUtils::getAppType())
+                   .arg(SyntroUtils::getAppName()));
 
 	m_frameRateTimer = startTimer(FRAME_RATE_TIMER_INTERVAL * 1000);
 
@@ -85,7 +85,7 @@ void SyntroLCam::closeEvent(QCloseEvent *)
 		m_frameRefreshTimer = 0;
 	}
 
-	m_client->exitThread();
+    m_client->exitThread();
 
 	saveWindowState();
     SyntroUtils::syntroAppExit();
@@ -98,7 +98,7 @@ bool SyntroLCam::createCamera()
 		m_camera = NULL;
 	}
 
-	m_camera = new V4LCam(m_settings);
+    m_camera = new V4LCam();
 
 	if (!m_camera)
 		return false;
@@ -141,7 +141,10 @@ void SyntroLCam::startVideo()
 	connect(m_camera, SIGNAL(newImage(QImage)), this, SLOT(newImage(QImage)), Qt::DirectConnection);
 	connect(m_camera, SIGNAL(newImage(QImage)), m_client, SLOT(newImage(QImage)), Qt::DirectConnection);
 
-	m_camera->startCapture();
+    connect(this, SIGNAL(startCapture()), m_camera, SLOT(startCapture()), Qt::QueuedConnection);
+    connect(this, SIGNAL(stopCapture()), m_camera, SLOT(stopCapture()), Qt::QueuedConnection);
+
+    emit startCapture();
 	m_frameCount = 0;
 	m_frameRefreshTimer = startTimer(10);
 	ui.actionStart->setEnabled(false);
@@ -162,8 +165,11 @@ void SyntroLCam::stopVideo()
 		disconnect(m_camera, SIGNAL(frameSize(int,int)), this, SLOT(frameSize(int,int)));
 		disconnect(m_camera, SIGNAL(frameSize(int,int)), m_client, SLOT(frameSize(int,int)));
 
-		m_camera->stopCapture();
-		delete m_camera;
+        disconnect(this, SIGNAL(startCapture()), m_camera, SLOT(startCapture()));
+        disconnect(this, SIGNAL(stopCapture()), m_camera, SLOT(stopCapture()));
+
+        emit stopCapture();
+        m_camera->exitThread();                             // let the old thread die and delete itself
 		m_camera = NULL;
 	}
 
@@ -313,21 +319,25 @@ void SyntroLCam::layoutStatusBar()
 
 void SyntroLCam::saveWindowState()
 {
-	if (m_settings) {
-		m_settings->beginGroup("Window");
-		m_settings->setValue("Geometry", saveGeometry());
-		m_settings->setValue("State", saveState());
-		m_settings->endGroup();
-	}
+    QSettings *settings = SyntroUtils::getSettings();
+
+    settings->beginGroup("Window");
+    settings->setValue("Geometry", saveGeometry());
+    settings->setValue("State", saveState());
+    settings->endGroup();
+
+    delete settings;
 }
 
 void SyntroLCam::restoreWindowState()
 {
-	if (m_settings) {
-		m_settings->beginGroup("Window");
-		restoreGeometry(m_settings->value("Geometry").toByteArray());
-		restoreState(m_settings->value("State").toByteArray());
-		m_settings->endGroup();
-	}
+    QSettings *settings = SyntroUtils::getSettings();
+
+    settings->beginGroup("Window");
+    restoreGeometry(settings->value("Geometry").toByteArray());
+    restoreState(settings->value("State").toByteArray());
+    settings->endGroup();
+
+    delete settings;
 }
 
