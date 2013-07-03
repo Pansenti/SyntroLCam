@@ -36,6 +36,7 @@
 #define DEFAULT_WIDTH  640
 #define DEFAULT_HEIGHT 480
 #define MAXIMUM_RATE   100
+#define DEFAULT_RATE   10
 
 #define MAX_CONSECUTIVE_BAD_FRAMES 50
 
@@ -48,7 +49,7 @@ V4LCam::V4LCam() : SyntroThread("V4LCam", "SyntroLCam")
 	m_cameraNum = DEFAULT_CAMERA;
 	m_width = DEFAULT_WIDTH;
 	m_height = DEFAULT_HEIGHT;
-	m_frameRate = MAXIMUM_RATE;
+	m_frameRate = DEFAULT_RATE;
 	m_frameCount = 0;
 	m_mmBuffLen = 0;
 	m_rgbBuff = NULL;
@@ -67,7 +68,7 @@ V4LCam::V4LCam() : SyntroThread("V4LCam", "SyntroLCam")
         settings->setValue(SYNTRO_CAMERA_HEIGHT, DEFAULT_HEIGHT);
 
     if (!settings->contains(SYNTRO_CAMERA_FRAMERATE))
-        settings->setValue(SYNTRO_CAMERA_FRAMERATE, MAXIMUM_RATE);
+        settings->setValue(SYNTRO_CAMERA_FRAMERATE, DEFAULT_RATE);
 
     if (!settings->contains(SYNTRO_CAMERA_FORMAT))
         settings->setValue(SYNTRO_CAMERA_FORMAT, "MJPG");
