@@ -166,10 +166,9 @@ void SyntroLCam::stopVideo()
 		disconnect(m_camera, SIGNAL(frameSize(int,int)), m_client, SLOT(frameSize(int,int)));
 
         disconnect(this, SIGNAL(startCapture()), m_camera, SLOT(startCapture()));
-        disconnect(this, SIGNAL(stopCapture()), m_camera, SLOT(stopCapture()));
-
         emit stopCapture();
-        m_camera->exitThread();                             // let the old thread die and delete itself
+
+        disconnect(this, SIGNAL(stopCapture()), m_camera, SLOT(stopCapture()));
 		m_camera = NULL;
 	}
 

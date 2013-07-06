@@ -290,14 +290,15 @@ void V4LCam::initThread()
         m_ticks = 0;
         emit cameraState("Disconnected");
     }
+
     m_timer = startTimer(25);
 }
 
 void V4LCam::finishThread()
 {
+    killTimer(m_timer);
     streamOff();
     closeDevice();
-    emit cameraState("Disconnected");
 }
 
 void V4LCam::timerEvent(QTimerEvent *)
