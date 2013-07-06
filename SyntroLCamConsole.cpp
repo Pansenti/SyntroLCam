@@ -57,11 +57,21 @@ SyntroLCamConsole::SyntroLCamConsole(bool daemonMode, QObject *parent)
     m_client = new CamClient(this);
 	m_client->resumeThread();
 
+    if (!m_daemonMode) {
+        m_frameCount = 0;
+        m_frameRateTimer = startTimer(FRAME_RATE_TIMER_INTERVAL * 1000);
+    }
+
 	start();
 }
 
 void SyntroLCamConsole::aboutToQuit()
 {
+    if (m_frameRateTimer) {
+        killTimer(m_frameRateTimer);
+        m_frameRateTimer = 0;
+    }
+
 	for (int i = 0; i < 5; i++) {
 		if (wait(1000))
 			break;
@@ -107,21 +117,11 @@ bool SyntroLCamConsole::startVideo()
 
 	m_camera->startCapture();
 
-	if (!m_daemonMode) {
-		m_frameCount = 0;
-		m_frameRateTimer = startTimer(FRAME_RATE_TIMER_INTERVAL * 1000);
-	}
-
 	return true;
 }
 
 void SyntroLCamConsole::stopVideo()
 {
-	if (m_frameRateTimer) {
-		killTimer(m_frameRateTimer);
-		m_frameRateTimer = 0;
-	}
-
 	if (m_camera) {
 		if (!m_daemonMode) {
 			disconnect(m_camera, SIGNAL(cameraState(QString)), this, SLOT(cameraState(QString)));
@@ -151,7 +151,6 @@ void SyntroLCamConsole::newFrame()
 
 void SyntroLCamConsole::timerEvent(QTimerEvent *)
 {
-    printf("Here");
 	m_frameRate =  (double)m_frameCount / (double)FRAME_RATE_TIMER_INTERVAL;
 	m_frameCount = 0;
 }
