@@ -62,8 +62,6 @@ private:
 	double m_frameRate;
 	bool m_daemonMode;
 	static volatile bool sigIntReceived;
-
-    QString m_logTag;
 };
 
 #endif // SYNTROLCAMCONSOLE_H

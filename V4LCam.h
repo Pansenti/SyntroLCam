@@ -117,8 +117,6 @@ private:
 	QList<QSize> m_sizeList;
 	QList<QSize> m_rateList;
 
-    QString m_logTag;
-
     int m_timer;
     int m_state;
     int m_ticks;

@@ -32,7 +32,6 @@ volatile bool SyntroLCamConsole::sigIntReceived = false;
 SyntroLCamConsole::SyntroLCamConsole(bool daemonMode, QObject *parent)
 	: QThread(parent)
 {
-    m_logTag = "LCamConsole";
 	m_daemonMode = daemonMode;
 
 	m_frameRate = 0.0;
@@ -100,7 +99,7 @@ bool SyntroLCamConsole::startVideo()
 {
 	if (!m_camera) {
 		if (!createCamera()) {
-			logError("Error allocating camera");
+            appLogError("Error allocating camera");
 			return false;
 		}
 	}
