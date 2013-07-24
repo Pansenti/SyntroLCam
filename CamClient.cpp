@@ -18,7 +18,7 @@
 //
 
 #include <qbuffer.h>
-
+#include <SyntroAVDefs.h>
 #include "CamClient.h"
 
 #define	CAMERA_IMAGE_INTERVAL	((qint64)SYNTRO_CLOCKS_PER_SEC/60)
@@ -53,6 +53,7 @@ void CamClient::videoHeaderInit(SYNTRO_RECORD_VIDEO *videoHead, int width, int h
     SyntroUtils::convertIntToUC2(SYNTRO_RECORD_TYPE_VIDEO, videoHead->recordHeader.type);
     SyntroUtils::convertIntToUC2(SYNTRO_RECORD_TYPE_VIDEO_MJPEG, videoHead->recordHeader.subType);
     SyntroUtils::convertIntToUC2(sizeof(SYNTRO_RECORD_VIDEO), videoHead->recordHeader.headerLength);
+    SyntroUtils::convertIntToUC2(SYNTRO_RECORDHEADER_PARAM_NORMAL, videoHead->recordHeader.param);
 
     SyntroUtils::convertIntToUC2(width, videoHead->width);
     SyntroUtils::convertIntToUC2(height, videoHead->height);
