@@ -143,7 +143,7 @@ bool V4LCam::handleJpeg(quint32 index, quint32 size)
 	uchar *p = (uchar *)m_mmBuff[index];
 
 	if (p[0] != 0xff || p[1] != 0xd8 || p[2] != 0xff) {
-        appLogWarn(QString("Not a jpeg, data starts with %1 %2 %3")
+        appLogDebug(QString("Not a jpeg, data starts with %1 %2 %3")
 			.arg(p[0], 2, 16, QChar('0'))
 			.arg(p[1], 2, 16, QChar('0'))
 			.arg(p[2], 2, 16, QChar('0')));
@@ -167,7 +167,7 @@ bool V4LCam::handleJpeg(quint32 index, quint32 size)
 		}
 		else {
 			// todo if we find a camera that does this
-            appLogWarn(QString("Unhandled JPEG header bytes 6-9 : %1 %2 %3 %4")
+            appLogDebug(QString("Unhandled JPEG header bytes 6-9 : %1 %2 %3 %4")
 				.arg(p[6], 2, 16, QChar('0'))
 				.arg(p[7], 2, 16, QChar('0'))
 				.arg(p[8], 2, 16, QChar('0'))
