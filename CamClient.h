@@ -65,6 +65,8 @@ private:
 	quint32 m_pixelFormat;
 	int	m_width;
 	int	m_height;
+
+    int m_recordIndex;
 };
 
 #endif // CAMCLIENT_H

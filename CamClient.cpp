@@ -54,10 +54,13 @@ void CamClient::videoHeaderInit(SYNTRO_RECORD_VIDEO *videoHead, int width, int h
     SyntroUtils::convertIntToUC2(SYNTRO_RECORD_TYPE_VIDEO_MJPEG, videoHead->recordHeader.subType);
     SyntroUtils::convertIntToUC2(sizeof(SYNTRO_RECORD_VIDEO), videoHead->recordHeader.headerLength);
     SyntroUtils::convertIntToUC2(SYNTRO_RECORDHEADER_PARAM_NORMAL, videoHead->recordHeader.param);
+    SyntroUtils::convertIntToUC2(0, videoHead->recordHeader.param1);
+    SyntroUtils::convertIntToUC2(0, videoHead->recordHeader.param2);
 
     SyntroUtils::convertIntToUC2(width, videoHead->width);
     SyntroUtils::convertIntToUC2(height, videoHead->height);
-    SyntroUtils::setSyntroTimestamp(&(videoHead->recordHeader.timestamp));
+    SyntroUtils::setTimestamp(videoHead->recordHeader.timestamp);
+    SyntroUtils::convertIntToUC4(m_recordIndex++, videoHead->recordHeader.recordIndex);
     SyntroUtils::convertIntToUC4(size, videoHead->size);
 }
 
@@ -66,6 +69,7 @@ void CamClient::appClientInit()
     m_cameraPort = clientAddService(SYNTRO_STREAMNAME_VIDEO, SERVICETYPE_MULTICAST, true);
 	m_width = 0;
 	m_height = 0;
+    m_recordIndex = 0;
 }
 
 void CamClient::appClientExit()
