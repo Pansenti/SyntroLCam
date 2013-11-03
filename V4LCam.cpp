@@ -53,42 +53,41 @@ V4LCam::V4LCam() : SyntroThread("V4LCam", "SyntroLCam")
 	m_mmBuffLen = 0;
 	m_rgbBuff = NULL;
 
-    QSettings *settings = SyntroUtils::getSettings();
+	QSettings *settings = SyntroUtils::getSettings();
 
-    settings->beginGroup("Camera");
+	settings->beginGroup("Camera");
 
-    if (!settings->contains(SYNTRO_CAMERA_CAMERA))
-        settings->setValue(SYNTRO_CAMERA_CAMERA, DEFAULT_CAMERA);
+	if (!settings->contains(SYNTRO_CAMERA_CAMERA))
+		settings->setValue(SYNTRO_CAMERA_CAMERA, DEFAULT_CAMERA);
 
-    if (!settings->contains(SYNTRO_CAMERA_WIDTH))
-        settings->setValue(SYNTRO_CAMERA_WIDTH, DEFAULT_WIDTH);
+	if (!settings->contains(SYNTRO_CAMERA_WIDTH))
+		settings->setValue(SYNTRO_CAMERA_WIDTH, DEFAULT_WIDTH);
 
-    if (!settings->contains(SYNTRO_CAMERA_HEIGHT))
-        settings->setValue(SYNTRO_CAMERA_HEIGHT, DEFAULT_HEIGHT);
+	if (!settings->contains(SYNTRO_CAMERA_HEIGHT))
+		settings->setValue(SYNTRO_CAMERA_HEIGHT, DEFAULT_HEIGHT);
 
-    if (!settings->contains(SYNTRO_CAMERA_FRAMERATE))
-        settings->setValue(SYNTRO_CAMERA_FRAMERATE, DEFAULT_RATE);
+	if (!settings->contains(SYNTRO_CAMERA_FRAMERATE))
+		settings->setValue(SYNTRO_CAMERA_FRAMERATE, DEFAULT_RATE);
 
-    if (!settings->contains(SYNTRO_CAMERA_FORMAT))
-        settings->setValue(SYNTRO_CAMERA_FORMAT, "MJPG");
+	if (!settings->contains(SYNTRO_CAMERA_FORMAT))
+		settings->setValue(SYNTRO_CAMERA_FORMAT, "MJPG");
 
 
-    m_cameraNum = settings->value(SYNTRO_CAMERA_CAMERA).toInt();
-    m_preferredWidth = settings->value(SYNTRO_CAMERA_WIDTH).toInt();
-    m_preferredHeight = settings->value(SYNTRO_CAMERA_HEIGHT).toInt();
-    m_preferredFrameRate = settings->value(SYNTRO_CAMERA_FRAMERATE).toInt();
+	m_cameraNum = settings->value(SYNTRO_CAMERA_CAMERA).toInt();
+	m_preferredWidth = settings->value(SYNTRO_CAMERA_WIDTH).toInt();
+	m_preferredHeight = settings->value(SYNTRO_CAMERA_HEIGHT).toInt();
+	m_preferredFrameRate = settings->value(SYNTRO_CAMERA_FRAMERATE).toInt();
 
-    QString format = settings->value(SYNTRO_CAMERA_FORMAT).toString().toUpper();
+	QString format = settings->value(SYNTRO_CAMERA_FORMAT).toString().toUpper();
 
-    if (format == "YUYV")
-        m_preferredFormat = V4L2_PIX_FMT_YUYV;
-    else
-        m_preferredFormat = V4L2_PIX_FMT_MJPEG;
+	if (format == "YUYV")
+		m_preferredFormat = V4L2_PIX_FMT_YUYV;
+	else
+		m_preferredFormat = V4L2_PIX_FMT_MJPEG;
 
-    settings->endGroup();
+	settings->endGroup();
 
-    delete settings;
-
+	delete settings;
 }
 
 V4LCam::~V4LCam()
@@ -112,13 +111,13 @@ bool V4LCam::handleFrame()
 			return true;
 		}
 		else {
-            appLogError(QString("VIDIOC_DQBUF - %1").arg(strerror(errno)));
+			appLogError(QString("VIDIOC_DQBUF - %1").arg(strerror(errno)));
 			return false;
 		}
 	}
 
 	if ((int)buf.index >= m_mmBuff.count()) {
-        appLogError(QString("VIDIOC_DQBUF returned invalid buf.index: %1").arg(buf.index));
+		appLogError(QString("VIDIOC_DQBUF returned invalid buf.index: %1").arg(buf.index));
 		return false;
 	}
 
@@ -167,7 +166,7 @@ bool V4LCam::handleJpeg(quint32 index, quint32 size)
 		}
 		else {
 			// todo if we find a camera that does this
-            appLogDebug(QString("Unhandled JPEG header bytes 6-9 : %1 %2 %3 %4")
+			appLogDebug(QString("Unhandled JPEG header bytes 6-9 : %1 %2 %3 %4")
 				.arg(p[6], 2, 16, QChar('0'))
 				.arg(p[7], 2, 16, QChar('0'))
 				.arg(p[8], 2, 16, QChar('0'))
@@ -279,85 +278,85 @@ QImage V4LCam::YUYV2RGB(quint32 index)
 
 void V4LCam::initThread()
 {
-    // optimize the typical case on startup
-    if (deviceExists() && openDevice()) {
-        m_state = STATE_CONNECTED;
-        emit cameraState("Connected");
-        m_ticks = CONNECT_MIN_TICKS;
-    } else {
-        m_state = STATE_DISCONNECTED;
-        m_ticks = 0;
-        emit cameraState("Disconnected");
-    }
+	// optimize the typical case on startup
+	if (deviceExists() && openDevice()) {
+		m_state = STATE_CONNECTED;
+		emit cameraState("Connected");
+		m_ticks = CONNECT_MIN_TICKS;
+	} else {
+		m_state = STATE_DISCONNECTED;
+		m_ticks = 0;
+		emit cameraState("Disconnected");
+	}
 
-    m_timer = startTimer(25);
+	m_timer = startTimer(25);
 }
 
 void V4LCam::finishThread()
 {
-    killTimer(m_timer);
-    streamOff();
-    closeDevice();
+	killTimer(m_timer);
+	streamOff();
+	closeDevice();
 }
 
 void V4LCam::timerEvent(QTimerEvent *)
 {
-    switch (m_state) {
-		case STATE_DISCONNECTED:
-            if (++m_ticks > DISCONNECT_MIN_TICKS) {
-				if (deviceExists()) {
-                    m_state = STATE_DETECTED;
-					emit cameraState("Detected");
-                    m_ticks = 0;
-				}
+	switch (m_state) {
+	case STATE_DISCONNECTED:
+		if (++m_ticks > DISCONNECT_MIN_TICKS) {
+			if (deviceExists()) {
+                    		m_state = STATE_DETECTED;
+				emit cameraState("Detected");
+                    		m_ticks = 0;
 			}
+		}
 
-            thread()->msleep(TICK_DURATION_MS);
+            	thread()->msleep(TICK_DURATION_MS);
+		break;
+
+	case STATE_DETECTED:
+		if (++m_ticks > DETECT_MIN_TICKS) {
+			if (openDevice()) {
+				m_state = STATE_CONNECTED;
+				emit cameraState("Connected");
+                    		m_ticks = 0;
+			}
+		}
+
+            	thread()->msleep(TICK_DURATION_MS);
+		break;
+
+	case STATE_CONNECTED:
+		if (++m_ticks <= CONNECT_MIN_TICKS) {
+               		thread()->msleep(TICK_DURATION_MS);
 			break;
+		}
 
-		case STATE_DETECTED:
-            if (++m_ticks > DETECT_MIN_TICKS) {
-				if (openDevice()) {
-                    m_state = STATE_CONNECTED;
-					emit cameraState("Connected");
-                    m_ticks = 0;
-				}
-			}
+		if (streamOn()) {
+                	m_state = STATE_CAPTURING;
+			emit cameraState("Running");
+		}
+		else {
+			closeDevice();
+                	m_state = STATE_DISCONNECTED;
+			emit cameraState("Disconnected");
+                	m_ticks = 0;
+                	thread()->msleep(TICK_DURATION_MS);
+		}
 
-            thread()->msleep(TICK_DURATION_MS);
-			break;
+		break;
 
-		case STATE_CONNECTED:
-            if (++m_ticks <= CONNECT_MIN_TICKS) {
-                thread()->msleep(TICK_DURATION_MS);
-				break;
-			}
+	case STATE_CAPTURING:
+		if (!readFrame()) {
+			streamOff();
+			closeDevice();
+               		m_state = STATE_DISCONNECTED;
+                	m_ticks = 0;
+			emit cameraState("Disconnected");
+                	thread()->msleep(TICK_DURATION_MS);
+		}
 
-			if (streamOn()) {
-                m_state = STATE_CAPTURING;
-				emit cameraState("Running");
-			}
-			else {
-				closeDevice();
-                m_state = STATE_DISCONNECTED;
-				emit cameraState("Disconnected");
-                m_ticks = 0;
-                thread()->msleep(TICK_DURATION_MS);
-			}
-
-			break;
-
-		case STATE_CAPTURING:
-			if (!readFrame()) {
-				streamOff();
-				closeDevice();
-                m_state = STATE_DISCONNECTED;
-                m_ticks = 0;
-				emit cameraState("Disconnected");
-                thread()->msleep(TICK_DURATION_MS);
-			}
-
-			break;
+		break;
 	}
 }
 
@@ -376,14 +375,15 @@ bool V4LCam::readFrame()
 	if (result == -1) {
 		if (errno == EINTR) {
 			return true;
-        } else {
-            appLogError(QString("select - %1").arg(strerror(errno)));
+        	} 
+		else {
+            		appLogError(QString("select - %1").arg(strerror(errno)));
 			return false;
 		}
 	}
 
 	if (result == 0) {
-        appLogError("V4LCam: select timeout");
+        	appLogError("V4LCam: select timeout");
 		return false;
 	}
 
@@ -480,7 +480,7 @@ void V4LCam::queryAvailableFormats()
 	f.index = 0;
 	f.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
-    appLogInfo("=== Available Formats ===");
+    	appLogInfo("=== Available Formats ===");
 
 	while (xioctl(VIDIOC_ENUM_FMT, &f) == 0) {
 		fmt[0] = f.pixelformat & 0xff;
@@ -488,7 +488,7 @@ void V4LCam::queryAvailableFormats()
 		fmt[2] = (f.pixelformat >> 16) & 0xff;
 		fmt[3] = (f.pixelformat >> 24) & 0xff;
 
-        appLogInfo(QString("[%1] %2%3%4%5")
+        	appLogInfo(QString("[%1] %2%3%4%5")
 			.arg(f.index)
 			.arg(fmt[0])
 			.arg(fmt[1])
@@ -496,7 +496,6 @@ void V4LCam::queryAvailableFormats()
 			.arg(fmt[3]));
 
 		m_formatList.append(f.pixelformat);
-
 		f.index++;
 	}
 }
@@ -515,21 +514,21 @@ bool V4LCam::choosePixelFormat()
 
 	if ((m_preferredFormat == V4L2_PIX_FMT_YUYV) && have_yuyv) {
 		m_pixelFormat = V4L2_PIX_FMT_YUYV;
-        appLogInfo("Choosing format YUYV");
+        	appLogInfo("Choosing format YUYV");
 		return true;
 	}
 	else if (have_mjpg) {
 		m_pixelFormat = V4L2_PIX_FMT_MJPEG;
-        appLogInfo("Choosing format MJPG");
+        	appLogInfo("Choosing format MJPG");
 		return true;
 	}
 	else if (have_yuyv) {
 		m_pixelFormat = V4L2_PIX_FMT_YUYV;
-        appLogInfo("Choosing format YUYV");
+        	appLogInfo("Choosing format YUYV");
 		return true;
 	}
 
-    appLogError("No supported formats available. Suported formats are MJPG or YUYV.");
+    	appLogError("No supported formats available. Suported formats are MJPG or YUYV.");
 	return false;
 }
 
@@ -553,7 +552,7 @@ void V4LCam::queryAvailableSizes()
 
 	qSort(m_sizeList.begin(), m_sizeList.end(), V4LCam::frameSizeLessThan);
 
-    appLogInfo("=== Available Frame Sizes (W x H) ===");
+    	appLogInfo("=== Available Frame Sizes (W x H) ===");
 	for (int i = 0; i < m_sizeList.count(); i++) {
         appLogInfo(QString("[%1] %2 x %3")
 			.arg(i)
@@ -578,7 +577,7 @@ bool V4LCam::chooseFrameSize()
 		if (m_preferredWidth > 320 || m_preferredHeight > 240) {
 			search_width = 320;
 			search_height = 240;
-            appLogWarn("Restricting frame size to (320 x 240) due to non-MJPG format");
+            		appLogWarn("Restricting frame size to (320 x 240) due to non-MJPG format");
 		}
 	}
 
@@ -619,14 +618,14 @@ bool V4LCam::chooseFrameSize()
 	m_width = m_sizeList.at(i).width();
 	m_height = m_sizeList.at(i).height();
 
-    appLogInfo(QString("Requested frame size was (%1 x %2) choosing (%3 x %4)")
+    	appLogInfo(QString("Requested frame size was (%1 x %2) choosing (%3 x %4)")
 		.arg(m_preferredWidth)
 		.arg(m_preferredHeight)
 		.arg(m_width)
 		.arg(m_height));
 
 	if (m_pixelFormat == V4L2_PIX_FMT_YUYV && m_width > 640)
-        appLogInfo("Chosen size with format YUYV may have performance issues");
+        	appLogInfo("Chosen size with format YUYV may have performance issues");
 
 	return true;
 }
@@ -647,7 +646,7 @@ void V4LCam::queryAvailableRates()
 		return;
 
 	if (f.type != V4L2_FRMIVAL_TYPE_DISCRETE) {
-        appLogWarn(QString("TODO: Unhandled frame interval type %1").arg(f.type));
+        	appLogWarn(QString("TODO: Unhandled frame interval type %1").arg(f.type));
 		return;
 	}
 
@@ -660,29 +659,30 @@ void V4LCam::queryAvailableRates()
 
 	qSort(m_rateList.begin(), m_rateList.end(), V4LCam::frameRateLessThan);
 
-    appLogInfo("=== Available Frame Rates (fps) ===");
+	appLogInfo("=== Available Frame Rates (fps) ===");
 	for (int i = 0; i < m_rateList.count(); i++) {
 		qreal rate = (qreal)m_rateList.at(i).height() / (qreal)m_rateList.at(i).width();
-        appLogInfo(QString("[%1] %2").arg(i).arg(rate));
+		appLogInfo(QString("[%1] %2").arg(i).arg(rate));
 	}
 }
 
 // Choose the fastest rate not faster then the preferred rate
 bool V4LCam::chooseFrameRate()
 {
-	int i;
+	m_frameRate = m_preferredFrameRate;
+	m_frameRateIndex = -1;
 
-	for (i = m_rateList.count() - 1; i > 0; i--) {
+	for (int i = m_rateList.count() - 1; i > 0; i--) {
 		qreal rate = (qreal)m_rateList.at(i).height() / (qreal)m_rateList.at(i).width();
 
-		if (rate <= m_preferredFrameRate)
+		if (rate <= m_preferredFrameRate) {
+			m_frameRate = (qreal)m_rateList.at(i).height() / (qreal)m_rateList.at(i).width();
+			m_frameRateIndex = i;
 			break;
+		}
 	}
 
-	m_frameRate = (qreal)m_rateList.at(i).height() / (qreal)m_rateList.at(i).width();
-	m_frameRateIndex = i;
-
-    appLogInfo(QString("Requested frame rate was (%1) choosing (%2)")
+	appLogInfo(QString("Requested frame rate was (%1) choosing (%2)")
 		.arg(m_preferredFrameRate)
 		.arg(m_frameRate));
 
@@ -702,24 +702,24 @@ bool V4LCam::setImageFormat()
 	fmt.fmt.pix.field = V4L2_FIELD_NONE;
 
 	if (-1 == xioctl(VIDIOC_S_FMT, &fmt)) {
-        appLogError(QString("VIDIOC_S_FMT - %1").arg(strerror(errno)));
+        	appLogError(QString("VIDIOC_S_FMT - %1").arg(strerror(errno)));
 		return false;
 	}
 
 	if ((int)fmt.fmt.pix.width != m_width) {
-        appLogError("Width changed after VIDIOC_S_FMT");
-        appLogError(QString("Requested width %1  Got %2").arg(m_width).arg(fmt.fmt.pix.width));
+        	appLogError("Width changed after VIDIOC_S_FMT");
+        	appLogError(QString("Requested width %1  Got %2").arg(m_width).arg(fmt.fmt.pix.width));
 		return false;
 	}
 
 	if ((int)fmt.fmt.pix.height != m_height) {
-        appLogError("Height changed after VIDIOC_S_FMT");
-        appLogError(QString("Requested height %1  Got %2").arg(m_height).arg(fmt.fmt.pix.height));
+        	appLogError("Height changed after VIDIOC_S_FMT");
+        	appLogError(QString("Requested height %1  Got %2").arg(m_height).arg(fmt.fmt.pix.height));
 		return false;
 	}
 
 	if (fmt.fmt.pix.pixelformat != m_pixelFormat) {
-        appLogError("pixelformat changed after VIDIOC_S_FMT");
+        	appLogError("pixelformat changed after VIDIOC_S_FMT");
 		return false;
 	}
 
@@ -738,12 +738,12 @@ bool V4LCam::setFrameRate()
 	sp.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
 	if (-1 == xioctl(VIDIOC_G_PARM, &sp)) {
-        appLogError("Failed to get stream parameters for frame rate adjustment");
+        	appLogError("Failed to get stream parameters for frame rate adjustment");
 		return false;
 	}
 
 	if (!(sp.parm.capture.capability & V4L2_CAP_TIMEPERFRAME)) {
-        appLogWarn("Frame rate adjustment not supported");
+        	appLogWarn("Frame rate adjustment not supported");
 		return true;
 	}
 
@@ -757,7 +757,7 @@ bool V4LCam::setFrameRate()
 	sp.parm.capture.timeperframe.denominator = m_rateList.at(m_frameRateIndex).height();
 
 	if (-1 == xioctl(VIDIOC_S_PARM, &sp)) {
-        appLogError(QString("Failed to set frame rate to %1 fps").arg(m_frameRate));
+        	appLogError(QString("Failed to set frame rate to %1 fps").arg(m_frameRate));
 		return false;
 	}
 
@@ -779,14 +779,14 @@ bool V4LCam::allocMmapBuffers()
 	req.memory = V4L2_MEMORY_MMAP;
 
 	if (-1 == xioctl(VIDIOC_REQBUFS, &req)) {
-        appLogError(QString("VIDIOC_REQBUFS - %1").arg(strerror(errno)));
+        	appLogError(QString("VIDIOC_REQBUFS - %1").arg(strerror(errno)));
 		return false;
 	}
 
 	// but we're cool with whatever we get
 	if (req.count < 1) {
 		// TODO: go to fallback mode where we provide copy buffers
-        appLogError("mmap buffers not supported by camera");
+        	appLogError("mmap buffers not supported by camera");
 		return false;
 	}
 
@@ -799,7 +799,7 @@ bool V4LCam::allocMmapBuffers()
 		buf.index = i;
 
 		if (-1 == xioctl(VIDIOC_QUERYBUF, &buf)) {
-            appLogError(QString("VIDIOC_QUERYBUF - %1").arg(strerror(errno)));
+            		appLogError(QString("VIDIOC_QUERYBUF - %1").arg(strerror(errno)));
 			return false;
 		}
 
@@ -808,7 +808,7 @@ bool V4LCam::allocMmapBuffers()
 		}
 		else if (m_mmBuffLen != buf.length) {
 			// they should always be the same size
-            appLogError("mmap buffers are not the same size");
+            		appLogError("mmap buffers are not the same size");
 			return false;
 		}
 
@@ -816,7 +816,7 @@ bool V4LCam::allocMmapBuffers()
 					MAP_SHARED, m_fd, buf.m.offset);
 
 		if (MAP_FAILED == p) {
-            appLogError(QString("mmap - %1").arg(strerror(errno)));
+            		appLogError(QString("mmap - %1").arg(strerror(errno)));
 			return false;
 		}
 
@@ -852,7 +852,7 @@ bool V4LCam::queueV4LBuffer(quint32 index)
 	buf.index = index;
 
 	if (-1 == xioctl (VIDIOC_QBUF, &buf)) {
-        appLogError(QString("VIDIOC_QBUF - %1").arg(strerror(errno)));
+        	appLogError(QString("VIDIOC_QBUF - %1").arg(strerror(errno)));
 		return false;
 	}
 
@@ -869,7 +869,7 @@ bool V4LCam::streamOn()
 	enum v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
 	if (-1 == xioctl(VIDIOC_STREAMON, &type)) {
-        appLogError(QString("VIDIOC_STREAMON - %1").arg(strerror(errno)));
+        	appLogError(QString("VIDIOC_STREAMON - %1").arg(strerror(errno)));
 		return false;
 	}
 
@@ -881,7 +881,7 @@ void V4LCam::streamOff()
 	enum v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
 	if (-1 == xioctl(VIDIOC_STREAMOFF, &type))
-        appLogError(QString("VIDIOC_STREAMOFF - %1").arg(strerror(errno)));
+        	appLogError(QString("VIDIOC_STREAMOFF - %1").arg(strerror(errno)));
 }
 
 int V4LCam::xioctl(int request, void *arg)
