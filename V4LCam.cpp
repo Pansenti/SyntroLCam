@@ -466,7 +466,7 @@ bool V4LCam::openDevice()
 	}
 
 	emit pixelFormat(m_pixelFormat);
-	emit frameSize(m_width, m_height);
+    emit videoFormat(m_width, m_height, m_frameRate);
 
 	return true;
 }

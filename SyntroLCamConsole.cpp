@@ -110,7 +110,7 @@ bool SyntroLCamConsole::startVideo()
     }
 
 	connect(m_camera, SIGNAL(pixelFormat(quint32)), m_client, SLOT(pixelFormat(quint32)));
-	connect(m_camera, SIGNAL(frameSize(int,int)), m_client, SLOT(frameSize(int,int)));
+	connect(m_camera, SIGNAL(videoFormat(int,int,int)), m_client, SLOT(videoFormat(int,int,int)));
 	connect(m_camera, SIGNAL(newJPEG(QByteArray)), m_client, SLOT(newJPEG(QByteArray)), Qt::DirectConnection);
 	connect(m_camera, SIGNAL(newImage(QImage)), m_client, SLOT(newImage(QImage)), Qt::DirectConnection);
 
@@ -128,7 +128,7 @@ void SyntroLCamConsole::stopVideo()
 		}
 
 		disconnect(m_camera, SIGNAL(pixelFormat(quint32)), m_client, SLOT(pixelFormat(quint32)));
-		disconnect(m_camera, SIGNAL(frameSize(int,int)), m_client, SLOT(frameSize(int,int)));
+		disconnect(m_camera, SIGNAL(videoFormat(int,int,int)), m_client, SLOT(videoFormat(int,int,int)));
 		disconnect(m_camera, SIGNAL(newJPEG(QByteArray)), m_client, SLOT(newJPEG(QByteArray)));
 		disconnect(m_camera, SIGNAL(newImage(QImage)), m_client, SLOT(newImage(QImage)));
 

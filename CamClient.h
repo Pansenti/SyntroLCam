@@ -41,7 +41,7 @@ public:
 
 public slots:
 	void pixelFormat(quint32 format);
-	void frameSize(int width, int height);
+    void videoFormat(int width, int height, int frameRate);
 	void newJPEG(QByteArray);
 	void newImage(QImage);
 
@@ -53,7 +53,6 @@ protected:
 
 private:
 	void sendFrame();
-	void videoHeaderInit(SYNTRO_RECORD_VIDEO *videoHead, int width, int height, int size);
 	QByteArray getFrame();
 
 	int m_cameraPort;
@@ -63,10 +62,10 @@ private:
 	QQueue <QImage> m_imgFrameQ;
 
 	quint32 m_pixelFormat;
-	int	m_width;
-	int	m_height;
 
     int m_recordIndex;
+
+    SYNTRO_AVPARAMS m_avParams;
 };
 
 #endif // CAMCLIENT_H

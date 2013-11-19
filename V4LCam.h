@@ -50,7 +50,7 @@ public slots:
 
 signals:
 	void pixelFormat(quint32 format);
-	void frameSize(int width, int height);
+    void videoFormat(int width, int height, int frameRate);
 	void newJPEG(QByteArray);
 	void newImage(QImage);
 	void newFrame();

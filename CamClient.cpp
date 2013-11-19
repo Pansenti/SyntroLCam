@@ -35,41 +35,33 @@ void CamClient::sendFrame()
 	if (frame.size() == 0)
 		return;
 
-	SYNTRO_EHEAD *multiCast = clientBuildMessage(m_cameraPort, sizeof(SYNTRO_RECORD_VIDEO) + frame.size());
+    SYNTRO_EHEAD *multiCast = clientBuildMessage(m_cameraPort, sizeof(SYNTRO_RECORD_AVMUX) + frame.size());
 
-	SYNTRO_RECORD_VIDEO *videoHead = (SYNTRO_RECORD_VIDEO *)(multiCast + 1);
+    SYNTRO_RECORD_AVMUX *avmuxHead = (SYNTRO_RECORD_AVMUX *)(multiCast + 1);
 
-	videoHeaderInit(videoHead, m_width, m_height, frame.size());
+    SyntroUtils::avmuxHeaderInit(avmuxHead, &m_avParams, SYNTRO_RECORDHEADER_PARAM_NORMAL,
+        m_recordIndex++, 0, frame.size(), 0);
 
-	memcpy((unsigned char *)(videoHead + 1), frame.constData(), frame.size());
+    memcpy((unsigned char *)(avmuxHead + 1), frame.constData(), frame.size());
 
-	int length = sizeof(SYNTRO_RECORD_VIDEO) + frame.size();
+    int length = sizeof(SYNTRO_RECORD_AVMUX) + frame.size();
 
 	clientSendMessage(m_cameraPort, multiCast, length, SYNTROLINK_LOWPRI);
 }
 
-void CamClient::videoHeaderInit(SYNTRO_RECORD_VIDEO *videoHead, int width, int height, int size)
-{
-    SyntroUtils::convertIntToUC2(SYNTRO_RECORD_TYPE_VIDEO, videoHead->recordHeader.type);
-    SyntroUtils::convertIntToUC2(SYNTRO_RECORD_TYPE_VIDEO_MJPEG, videoHead->recordHeader.subType);
-    SyntroUtils::convertIntToUC2(sizeof(SYNTRO_RECORD_VIDEO), videoHead->recordHeader.headerLength);
-    SyntroUtils::convertIntToUC2(SYNTRO_RECORDHEADER_PARAM_NORMAL, videoHead->recordHeader.param);
-    SyntroUtils::convertIntToUC2(0, videoHead->recordHeader.param1);
-    SyntroUtils::convertIntToUC2(0, videoHead->recordHeader.param2);
-
-    SyntroUtils::convertIntToUC2(width, videoHead->width);
-    SyntroUtils::convertIntToUC2(height, videoHead->height);
-    SyntroUtils::setTimestamp(videoHead->recordHeader.timestamp);
-    SyntroUtils::convertIntToUC4(m_recordIndex++, videoHead->recordHeader.recordIndex);
-    SyntroUtils::convertIntToUC4(size, videoHead->size);
-}
-
 void CamClient::appClientInit()
 {
-    m_cameraPort = clientAddService(SYNTRO_STREAMNAME_VIDEO, SERVICETYPE_MULTICAST, true);
-	m_width = 0;
-	m_height = 0;
+    m_cameraPort = clientAddService(SYNTRO_STREAMNAME_AVMUX, SERVICETYPE_MULTICAST, true);
     m_recordIndex = 0;
+
+    // set avParam defaults
+
+    m_avParams.videoWidth = 640;
+    m_avParams.videoHeight = 480;
+    m_avParams.videoFramerate = 30;
+    m_avParams.videoSubtype = SYNTRO_RECORD_TYPE_VIDEO_MJPEG;
+    m_avParams.avmuxSubtype = SYNTRO_RECORD_TYPE_AVMUX_MJPPCM;
+
 }
 
 void CamClient::appClientExit()
@@ -113,10 +105,11 @@ void CamClient::pixelFormat(quint32 format)
 	m_pixelFormat = format;
 }
 
-void CamClient::frameSize(int width, int height)
+void CamClient::videoFormat(int width, int height, int frameRate)
 {
-	m_width = width;
-	m_height = height;
+    m_avParams.videoWidth = width;
+    m_avParams.videoHeight = height;
+    m_avParams.videoFramerate = frameRate;
 }
 
 void CamClient::newJPEG(QByteArray frame)

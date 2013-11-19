@@ -133,8 +133,8 @@ void SyntroLCam::startVideo()
 	connect(m_camera, SIGNAL(cameraState(QString)), this, SLOT(cameraState(QString)), Qt::DirectConnection);
 	connect(m_camera, SIGNAL(pixelFormat(quint32)), this, SLOT(pixelFormat(quint32)));
 	connect(m_camera, SIGNAL(pixelFormat(quint32)), m_client, SLOT(pixelFormat(quint32)));
-	connect(m_camera, SIGNAL(frameSize(int,int)), this, SLOT(frameSize(int,int)));
-	connect(m_camera, SIGNAL(frameSize(int,int)), m_client, SLOT(frameSize(int,int)));
+    connect(m_camera, SIGNAL(videoFormat(int,int,int)), this, SLOT(videoFormat(int,int,int)));
+    connect(m_camera, SIGNAL(videoFormat(int,int,int)), m_client, SLOT(videoFormat(int,int,int)));
 
 	connect(m_camera, SIGNAL(newJPEG(QByteArray)), this, SLOT(newJPEG(QByteArray)), Qt::DirectConnection);
 	connect(m_camera, SIGNAL(newJPEG(QByteArray)), m_client, SLOT(newJPEG(QByteArray)), Qt::DirectConnection);
@@ -161,9 +161,9 @@ void SyntroLCam::stopVideo()
 
 		disconnect(m_camera, SIGNAL(cameraState(QString)), this, SLOT(cameraState(QString)));
 		disconnect(m_camera, SIGNAL(pixelFormat(quint32)), this, SLOT(pixelFormat(quint32)));
-		disconnect(m_camera, SIGNAL(pixelFormat(quint32)), m_client, SLOT(pixelFormat(quint32)));
-		disconnect(m_camera, SIGNAL(frameSize(int,int)), this, SLOT(frameSize(int,int)));
-		disconnect(m_camera, SIGNAL(frameSize(int,int)), m_client, SLOT(frameSize(int,int)));
+        disconnect(m_camera, SIGNAL(pixelFormat(quint32)), m_client, SLOT(pixelFormat(quint32)));
+        disconnect(m_camera, SIGNAL(videoFormat(int,int,int)), this, SLOT(videoFormat(int,int,int)));
+        disconnect(m_camera, SIGNAL(videoFormat(int,int,int)), m_client, SLOT(videoFormat(int,int,int)));
 
         disconnect(this, SIGNAL(startCapture()), m_camera, SLOT(startCapture()));
         emit stopCapture();
@@ -191,7 +191,7 @@ void SyntroLCam::pixelFormat(quint32 format)
 	m_pixelFormat = format;
 }
 
-void SyntroLCam::frameSize(int width, int height)
+void SyntroLCam::videoFormat(int width, int height, int /* frameRate */)
 {
 	m_imgSize.setWidth(width);
 	m_imgSize.setHeight(height);

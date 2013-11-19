@@ -42,7 +42,7 @@ public slots:
 	void onStop();
 	void cameraState(QString state);
 	void pixelFormat(quint32 format);
-	void frameSize(int width, int height);
+    void videoFormat(int width, int height, int frameRate);
 	void newJPEG(QByteArray);
 	void newImage(QImage);
 
