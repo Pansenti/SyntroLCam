@@ -1,5 +1,5 @@
 //
-//  Copyright (c) 2013 Pansenti, LLC.
+//  Copyright (c) 2012, 2013 Pansenti, LLC.
 //
 //  This file is part of Syntro
 //
@@ -18,7 +18,14 @@
 //
 
 #include <QMessageBox>
+#include <qboxlayout.h>
 #include "SyntroLCam.h"
+#include "SyntroAboutDlg.h"
+#include "BasicSetupDlg.h"
+#include "StreamsDlg.h"
+#include "CameraDlg.h"
+#include "MotionDlg.h"
+#include "AudioDlg.h"
 
 #define FRAME_RATE_TIMER_INTERVAL 2
 
@@ -31,18 +38,36 @@ SyntroLCam::SyntroLCam()
 	m_frameRateTimer = 0;
 	m_frameRefreshTimer = 0;
 	m_camera = NULL;
-	m_pixelFormat = 0;
+    m_audio = NULL;
 
 	layoutStatusBar();
 
-	ui.cameraView->setText("Camera Image");
+	QWidget *centralWidget = new QWidget(this);
+	QVBoxLayout *verticalLayout = new QVBoxLayout(centralWidget);
+	verticalLayout->setSpacing(6);
+	verticalLayout->setContentsMargins(0, 0, 0, 0);
+	m_cameraView = new QLabel(centralWidget);
+	
+	QSizePolicy sizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+	sizePolicy.setHorizontalStretch(0);
+	sizePolicy.setVerticalStretch(0);
+	sizePolicy.setHeightForWidth(m_cameraView->sizePolicy().hasHeightForWidth());
+	m_cameraView->setSizePolicy(sizePolicy);
+	m_cameraView->setMinimumSize(QSize(320, 240));
+	m_cameraView->setAlignment(Qt::AlignCenter);
+
+	verticalLayout->addWidget(m_cameraView);
+
+	setCentralWidget(centralWidget);
 
 	connect(ui.actionExit, SIGNAL(triggered()), this, SLOT(close()));
-	connect(ui.actionStart, SIGNAL(triggered()), this, SLOT(onStart()));
-	connect(ui.actionStop, SIGNAL(triggered()), this, SLOT(onStop()));
+	connect(ui.actionAbout, SIGNAL(triggered()), this, SLOT(onAbout()));
+	connect(ui.actionBasicSetup, SIGNAL(triggered()), this, SLOT(onBasicSetup()));
+	connect(ui.actionConfigureStreams, SIGNAL(triggered()), this, SLOT(onConfigureStreams()));
+	connect(ui.actionConfigureCamera, SIGNAL(triggered()), this, SLOT(onConfigureCamera()));
+	connect(ui.actionConfigureMotion, SIGNAL(triggered()), this, SLOT(onConfigureMotion()));
+	connect(ui.actionConfigureAudio, SIGNAL(triggered()), this, SLOT(onConfigureAudio()));
 
-	ui.actionStop->setEnabled(false);
-	ui.actionStart->setEnabled(true);
 
     SyntroUtils::syntroAppInit();
     m_client = new CamClient(this);
@@ -57,6 +82,7 @@ SyntroLCam::SyntroLCam()
 	m_frameRateTimer = startTimer(FRAME_RATE_TIMER_INTERVAL * 1000);
 
 	startVideo();
+    startAudio();
 }
 
 SyntroLCam::~SyntroLCam()
@@ -98,7 +124,7 @@ bool SyntroLCam::createCamera()
 		m_camera = NULL;
 	}
 
-    m_camera = new V4LCam();
+    m_camera = new VideoDriver();
 
 	if (!m_camera)
 		return false;
@@ -106,24 +132,11 @@ bool SyntroLCam::createCamera()
 	return true;
 }
 
-void SyntroLCam::onStart()
-{
-	m_imgSize.setWidth(-1);
-	m_imgSize.setHeight(-1);
-
-	startVideo();
-}
-
-void SyntroLCam::onStop()
-{
-	stopVideo();
-}
-
 void SyntroLCam::startVideo()
 {
 	if (!m_camera) {
 		if (!createCamera()) {
-			QMessageBox::warning(this, "SyntroLCam", "Error allocating camera", QMessageBox::Ok);
+            QMessageBox::warning(this, "SyntroLCam", "Error allocating camera", QMessageBox::Ok);
 			return;
 		}
 	}
@@ -131,24 +144,15 @@ void SyntroLCam::startVideo()
 	clearQueue();
 
 	connect(m_camera, SIGNAL(cameraState(QString)), this, SLOT(cameraState(QString)), Qt::DirectConnection);
-	connect(m_camera, SIGNAL(pixelFormat(quint32)), this, SLOT(pixelFormat(quint32)));
-	connect(m_camera, SIGNAL(pixelFormat(quint32)), m_client, SLOT(pixelFormat(quint32)));
     connect(m_camera, SIGNAL(videoFormat(int,int,int)), this, SLOT(videoFormat(int,int,int)));
     connect(m_camera, SIGNAL(videoFormat(int,int,int)), m_client, SLOT(videoFormat(int,int,int)));
 
 	connect(m_camera, SIGNAL(newJPEG(QByteArray)), this, SLOT(newJPEG(QByteArray)), Qt::DirectConnection);
 	connect(m_camera, SIGNAL(newJPEG(QByteArray)), m_client, SLOT(newJPEG(QByteArray)), Qt::DirectConnection);
-	connect(m_camera, SIGNAL(newImage(QImage)), this, SLOT(newImage(QImage)), Qt::DirectConnection);
-	connect(m_camera, SIGNAL(newImage(QImage)), m_client, SLOT(newImage(QImage)), Qt::DirectConnection);
 
-    connect(this, SIGNAL(startCapture()), m_camera, SLOT(startCapture()), Qt::QueuedConnection);
-    connect(this, SIGNAL(stopCapture()), m_camera, SLOT(stopCapture()), Qt::QueuedConnection);
-
-    emit startCapture();
+    m_camera->resumeThread();
 	m_frameCount = 0;
 	m_frameRefreshTimer = startTimer(10);
-	ui.actionStart->setEnabled(false);
-	ui.actionStop->setEnabled(true);
 }
 
 void SyntroLCam::stopVideo()
@@ -156,19 +160,12 @@ void SyntroLCam::stopVideo()
 	if (m_camera) {
 		disconnect(m_camera, SIGNAL(newJPEG(QByteArray)), this, SLOT(newJPEG(QByteArray)));
 		disconnect(m_camera, SIGNAL(newJPEG(QByteArray)), m_client, SLOT(newJPEG(QByteArray)));
-		disconnect(m_camera, SIGNAL(newImage(QImage)), this, SLOT(newImage(QImage)));
-		disconnect(m_camera, SIGNAL(newImage(QImage)), m_client, SLOT(newImage(QImage)));
 
 		disconnect(m_camera, SIGNAL(cameraState(QString)), this, SLOT(cameraState(QString)));
-		disconnect(m_camera, SIGNAL(pixelFormat(quint32)), this, SLOT(pixelFormat(quint32)));
-        disconnect(m_camera, SIGNAL(pixelFormat(quint32)), m_client, SLOT(pixelFormat(quint32)));
         disconnect(m_camera, SIGNAL(videoFormat(int,int,int)), this, SLOT(videoFormat(int,int,int)));
         disconnect(m_camera, SIGNAL(videoFormat(int,int,int)), m_client, SLOT(videoFormat(int,int,int)));
 
-        disconnect(this, SIGNAL(startCapture()), m_camera, SLOT(startCapture()));
-        emit stopCapture();
-
-        disconnect(this, SIGNAL(stopCapture()), m_camera, SLOT(stopCapture()));
+        m_camera->exitThread();
 		m_camera = NULL;
 	}
 
@@ -176,9 +173,28 @@ void SyntroLCam::stopVideo()
 		killTimer(m_frameRefreshTimer);
 		m_frameRefreshTimer = 0;
 	}
+}
 
-	ui.actionStop->setEnabled(false);
-	ui.actionStart->setEnabled(true);
+void SyntroLCam::startAudio()
+{
+    if (!m_audio) {
+        m_audio = new AudioDriver();
+        connect(m_audio, SIGNAL(newAudio(QByteArray)), m_client, SLOT(newAudio(QByteArray)), Qt::DirectConnection);
+        connect(m_audio, SIGNAL(audioFormat(int, int, int)), m_client, SLOT(audioFormat(int, int, int)), Qt::QueuedConnection);
+		connect(m_audio, SIGNAL(audioState(QString)), this, SLOT(audioState(QString)), Qt::DirectConnection);
+        m_audio->resumeThread();
+    }
+}
+
+void SyntroLCam::stopAudio()
+{
+    if (m_audio) {
+        disconnect(m_audio, SIGNAL(newAudio(QByteArray)), m_client, SLOT(newAudio(QByteArray)));
+        disconnect(m_audio, SIGNAL(audioFormat(int, int, int)), m_client, SLOT(audioFormat(int, int, int)));
+		disconnect(m_audio, SIGNAL(audioState(QString)), this, SLOT(audioState(QString)));
+        m_audio->exitThread();
+        m_audio = NULL;
+    }
 }
 
 void SyntroLCam::cameraState(QString state)
@@ -186,9 +202,9 @@ void SyntroLCam::cameraState(QString state)
 	m_cameraState = state;
 }
 
-void SyntroLCam::pixelFormat(quint32 format)
+void SyntroLCam::audioState(QString state)
 {
-	m_pixelFormat = format;
+	m_audioState = state;
 }
 
 void SyntroLCam::videoFormat(int width, int height, int /* frameRate */)
@@ -209,38 +225,20 @@ void SyntroLCam::newJPEG(QByteArray frame)
 	}
 }
 
-void SyntroLCam::newImage(QImage img)
-{
-	m_frameCount++;
-
-	if (m_frameQMutex.tryLock()) {
-		if (m_imgFrameQ.empty())
-			m_imgFrameQ.enqueue(img);
-
-		m_frameQMutex.unlock();
-	}
-}
-
 void SyntroLCam::timerEvent(QTimerEvent *event)
 {
 	if (event->timerId() == m_frameRateTimer) {
+		m_controlStatus->setText(m_client->getLinkState());
+		m_audioStatus->setText(QString("Audio: ") + m_audioState);
 		if (m_cameraState == "Running") {
-			m_frameRateStatus->setText(QString().sprintf("%0.1lf fps",
+			m_frameRateStatus->setText(QString().sprintf("Video: %0.1lf fps",
 				(double)m_frameCount / FRAME_RATE_TIMER_INTERVAL));
 
 			m_frameCount = 0;
-
-			if (m_pixelFormat == V4L2_PIX_FMT_MJPEG)
-				m_rawImageFormat->setText("MJPG");
-			else
-				m_rawImageFormat->setText("YUYV");                            
+        } else {
+			m_frameRateStatus->setText(QString("Video: ") + m_cameraState);
 		}
-		else {
-			m_frameRateStatus->setText(m_cameraState);
-			m_rawImageFormat->setText("");
-		}
-	}
-	else {
+    } else {
 		processFrameQueue();
 	}
 }
@@ -250,16 +248,10 @@ void SyntroLCam::processFrameQueue()
 	QByteArray frame;
 	QImage img;
 
-	bool isJpeg = false;
-
 	m_frameQMutex.lock();
 
 	if (!m_jpegFrameQ.empty()) {
 		frame = m_jpegFrameQ.dequeue();
-		isJpeg = true;
-	}
-	else if (!m_imgFrameQ.empty()) {
-		img = m_imgFrameQ.dequeue();
 	}
 
 	m_frameQMutex.unlock();
@@ -267,10 +259,7 @@ void SyntroLCam::processFrameQueue()
 	if (isMinimized())
 		return;
 
-	if (isJpeg)
-		showJPEG(frame);
-	else
-		showImage(img);
+    showJPEG(frame);
 }
 
 void SyntroLCam::showJPEG(QByteArray frame)
@@ -287,17 +276,16 @@ void SyntroLCam::showImage(QImage img)
 	if (img.isNull())
 		return;
 
-	QImage scaledImg = img.scaled(ui.cameraView->size(), Qt::KeepAspectRatio);
+	QImage scaledImg = img.scaled(m_cameraView->size(), Qt::KeepAspectRatio);
 
 	if (!scaledImg.isNull())
-		ui.cameraView->setPixmap(QPixmap::fromImage(scaledImg));
+		m_cameraView->setPixmap(QPixmap::fromImage(scaledImg));
 }
 
 void SyntroLCam::clearQueue()
 {
 	m_frameQMutex.lock();
 	m_jpegFrameQ.clear();
-	m_imgFrameQ.clear();
 	m_frameQMutex.unlock();
 }
 
@@ -307,9 +295,9 @@ void SyntroLCam::layoutStatusBar()
 	m_controlStatus->setAlignment(Qt::AlignLeft);
 	ui.statusBar->addWidget(m_controlStatus, 1);
 
-	m_rawImageFormat = new QLabel(this);
-	m_rawImageFormat->setAlignment(Qt::AlignLeft);
-	ui.statusBar->addWidget(m_rawImageFormat);
+	m_audioStatus = new QLabel(this);
+	m_audioStatus->setAlignment(Qt::AlignLeft);
+	ui.statusBar->addWidget(m_audioStatus);
 
 	m_frameRateStatus = new QLabel(this);
 	m_frameRateStatus->setAlignment(Qt::AlignCenter | Qt::AlignLeft);
@@ -340,3 +328,42 @@ void SyntroLCam::restoreWindowState()
     delete settings;
 }
 
+void SyntroLCam::onAbout()
+{
+	SyntroAbout *dlg = new SyntroAbout();
+	dlg->show();
+}
+
+void SyntroLCam::onBasicSetup()
+{
+	BasicSetupDlg *dlg = new BasicSetupDlg(this);
+	dlg->show();
+}
+
+void SyntroLCam::onConfigureStreams()
+{
+	StreamsDlg *dlg = new StreamsDlg(this);
+	connect(dlg, SIGNAL(newStream()), m_client, SLOT(newStream()), Qt::QueuedConnection);
+	dlg->show();
+}
+
+void SyntroLCam::onConfigureMotion()
+{
+	MotionDlg *dlg = new MotionDlg(this);
+	connect(dlg, SIGNAL(newStream()), m_client, SLOT(newStream()), Qt::QueuedConnection);
+	dlg->show();
+}
+
+void SyntroLCam::onConfigureCamera()
+{
+	CameraDlg *dlg = new CameraDlg(this);
+	connect(dlg, SIGNAL(newCamera()), m_camera, SLOT(newCamera()), Qt::QueuedConnection);
+	dlg->show();
+}
+
+void SyntroLCam::onConfigureAudio()
+{
+	AudioDlg *dlg = new AudioDlg(this);
+	connect(dlg, SIGNAL(newAudio()), m_audio, SLOT(newAudio()), Qt::QueuedConnection);
+	dlg->show();
+}

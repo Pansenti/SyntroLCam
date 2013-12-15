@@ -1,9 +1,13 @@
-# This file is part of Syntro
 #
-# Copyright (c) 2012 Pansenti, LLC. All rights reserved.
+#  Copyright (c) 2013 Pansenti, LLC.
+#
+#  This file is part of Syntro
 #
 
+cache()
+
 TEMPLATE = app
+
 TARGET = SyntroLCam
 
 DESTDIR = Output
@@ -16,10 +20,13 @@ CONFIG += debug_and_release link_pkgconfig
 
 PKGCONFIG += syntro
 
-unix {
-	target.path = /usr/bin
-	INSTALLS += target
-}
+LIBS += -lasound
+
+target.path = /usr/bin
+
+INSTALLS += target
+
+DEFINES += QT_NETWORK_LIB
 
 INCLUDEPATH += GeneratedFiles
 

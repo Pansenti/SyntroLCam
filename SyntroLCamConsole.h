@@ -1,5 +1,5 @@
 //
-//  Copyright (c) 2013 Pansenti, LLC.
+//  Copyright (c) 2012, 2013 Pansenti, LLC.
 //
 //  This file is part of Syntro
 //
@@ -21,8 +21,10 @@
 #define SYNTROLCAMCONSOLE_H
 
 #include <QThread>
-#include "SyntroLCam.h"
 
+class CamClient;
+class VideoDriver;
+class AudioDriver;
 
 class SyntroLCamConsole : public QThread
 {
@@ -35,6 +37,7 @@ public slots:
 	void cameraState(QString);
 	void newFrame();
 	void aboutToQuit();
+    void videoFormat(int width, int height, int frameRate);
 
 protected:
 	void run();
@@ -44,6 +47,8 @@ private:
 	bool createCamera();
 	bool startVideo();
 	void stopVideo();
+    void startAudio();
+    void stopAudio();
 	void showHelp();
 	void showStatus();
 
@@ -54,14 +59,22 @@ private:
 	static void sigHandler(int sig);
 
 	CamClient *m_client;
-	V4LCam *m_camera;
+    VideoDriver *m_camera;
+    AudioDriver *m_audio;
 
 	QString m_cameraState;
 	int m_frameCount;
 	int m_frameRateTimer;
-	double m_frameRate;
+    double m_computedFrameRate;
+    double m_audioSamplesPerSecond;
 	bool m_daemonMode;
 	static volatile bool sigIntReceived;
+
+    QString m_videoFormat;
+    int m_width;
+    int m_height;
+    int m_framerate;
+
 };
 
 #endif // SYNTROLCAMCONSOLE_H

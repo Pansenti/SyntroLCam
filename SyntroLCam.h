@@ -1,5 +1,5 @@
 //
-//  Copyright (c) 2013 Pansenti, LLC.
+//  Copyright (c) 2012, 2013 Pansenti, LLC.
 //
 //  This file is part of Syntro
 //
@@ -23,8 +23,10 @@
 #include <QtGui>
 #include "ui_SyntroLCam.h"
 
-#include "V4LCam.h"
+#include "VideoDriver.h"
+#include "AudioDriver.h"
 #include "CamClient.h"
+
 
 #define PRODUCT_TYPE "SyntroLCam"
 
@@ -35,20 +37,20 @@ class SyntroLCam : public QMainWindow
 
 public:
     SyntroLCam();
-	~SyntroLCam();
+    ~SyntroLCam();
 
 public slots:
-	void onStart();
-	void onStop();
+	void onAbout();
+	void onBasicSetup();
+	void onConfigureCamera();
+	void onConfigureStreams();
+	void onConfigureMotion();
+	void onConfigureAudio();
+
 	void cameraState(QString state);
-	void pixelFormat(quint32 format);
+ 	void audioState(QString state);
     void videoFormat(int width, int height, int frameRate);
 	void newJPEG(QByteArray);
-	void newImage(QImage);
-
-signals:
-    void startCapture();
-    void stopCapture();
 
 protected:
 	void timerEvent(QTimerEvent *event);
@@ -57,6 +59,8 @@ protected:
 private:
 	void startVideo();
 	void stopVideo();
+    void startAudio();
+    void stopAudio();
 	void processFrameQueue();
 	void showJPEG(QByteArray frame);
 	void showImage(QImage img);
@@ -66,24 +70,25 @@ private:
 	void saveWindowState();
 	void restoreWindowState();
 
-	Ui::SyntroLCamClass ui;
+    Ui::SyntroCamClass ui;
 
-	QLabel *m_rawImageFormat;
+	QLabel *m_cameraView;
+	QLabel *m_audioStatus;
 	QLabel *m_frameRateStatus;
 	QLabel *m_controlStatus;
 
 	CamClient *m_client;
-	V4LCam *m_camera;
+    VideoDriver *m_camera;
+    AudioDriver *m_audio;
 	QString m_cameraState;
+	QString m_audioState;
 	QMutex m_frameQMutex;
 	QQueue <QByteArray> m_jpegFrameQ;
-	QQueue <QImage> m_imgFrameQ;
 
 	int m_frameRateTimer;
 	int m_frameRefreshTimer;
 	int m_frameCount;
 	QSize m_imgSize;
-	quint32 m_pixelFormat;
 };
 
 #endif // SYNTROLCAM_H

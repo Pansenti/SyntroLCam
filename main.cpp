@@ -1,5 +1,5 @@
 //
-//  Copyright (c) 2013 Pansenti, LLC.
+//  Copyright (c) 2012, 2013 Pansenti, LLC.
 //
 //  This file is part of Syntro
 //
@@ -17,12 +17,10 @@
 //  along with Syntro.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-#include <QApplication>
 
-#include "SyntroLib.h"
 #include "SyntroLCam.h"
 #include "SyntroLCamConsole.h"
-
+#include <QApplication>
 
 int runGuiApp(int argc, char **);
 int runConsoleApp(int argc, char **);
