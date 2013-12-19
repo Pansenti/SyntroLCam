@@ -25,7 +25,7 @@
 #include "AudioDriver.h"
 
 AudioDlg::AudioDlg(QWidget *parent)
-	: QDialog(parent)
+    : QDialog(parent, Qt::WindowCloseButtonHint | Qt::WindowTitleHint)
 {
 	setWindowTitle("Audio configuration");
 
@@ -38,12 +38,7 @@ AudioDlg::AudioDlg(QWidget *parent)
 	layoutWindow();
 
 	connect(m_buttons, SIGNAL(accepted()), this, SLOT(onOk()));
-    connect(m_buttons, SIGNAL(rejected()), this, SLOT(onCancel()));
-}
-
-AudioDlg::~AudioDlg()
-{
-
+    connect(m_buttons, SIGNAL(rejected()), this, SLOT(reject()));
 }
 
 void AudioDlg::onOk()
@@ -63,6 +58,7 @@ void AudioDlg::onOk()
         settings->setValue(AUDIO_INPUT_CARD, m_inputCard->text());
         changed = true;
     }
+
     if (m_inputDevice->text() != settings->value(AUDIO_INPUT_DEVICE).toString()) {
 		settings->setValue(AUDIO_INPUT_DEVICE, m_inputDevice->text());
 		changed = true;
@@ -86,24 +82,16 @@ void AudioDlg::onOk()
 
 	delete settings;
 
-	if (changed) {
-		emit newAudio();
+    if (changed)
 		accept();
-	}
-	reject();
-}
-
-void AudioDlg::onCancel()
-{
-	reject();
+    else
+        reject();
 }
 
 void AudioDlg::layoutWindow()
 {
-
 	QSettings *settings = SyntroUtils::getSettings();
 
-    setModal(true);
 	settings->beginGroup(AUDIO_GROUP);
 
 	QVBoxLayout *centralLayout = new QVBoxLayout(this);
@@ -161,4 +149,3 @@ void AudioDlg::layoutWindow()
 	settings->endGroup();
 	delete settings;
 }
-

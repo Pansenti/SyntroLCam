@@ -23,17 +23,12 @@
 #include "CamClient.h"
 
 MotionDlg::MotionDlg(QWidget *parent)
-	: QDialog(parent)
+    : QDialog(parent, Qt::WindowCloseButtonHint | Qt::WindowTitleHint)
 {
 	layoutWindow();
 	setWindowTitle("Motion configuration");
 	connect(m_buttons, SIGNAL(accepted()), this, SLOT(onOk()));
-    connect(m_buttons, SIGNAL(rejected()), this, SLOT(onCancel()));
-}
-
-MotionDlg::~MotionDlg()
-{
-
+    connect(m_buttons, SIGNAL(rejected()), this, SLOT(reject()));
 }
 
 void MotionDlg::onOk()
@@ -65,26 +60,17 @@ void MotionDlg::onOk()
 	}
 
 	settings->endGroup();
-	if (changed) {
-		emit newStream();
-		delete settings;
-		accept();
-		return;
-	}
-	delete settings;
-	reject();
-}
 
-void MotionDlg::onCancel()
-{
-	reject();
+    delete settings;
+
+    if (changed)
+		accept();
+    else
+        reject();
 }
 
 void MotionDlg::layoutWindow()
 {
-
-    setModal(true);
-
 	QSettings *settings = SyntroUtils::getSettings();
 
 	settings->beginGroup(CAMCLIENT_MOTION_GROUP);
@@ -148,4 +134,3 @@ void MotionDlg::sliderMoved(int pos)
 {
 	m_minDeltaValue->setText(QString::number(pos));
 }
-

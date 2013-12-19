@@ -40,14 +40,9 @@ class CameraDlg : public QDialog
 
 public:
 	CameraDlg(QWidget *parent);
-	~CameraDlg();
 
 public slots:
 	void onOk();
-	void onCancel();
-
-signals:
-	void newCamera();
 
 private:
 	void layoutWindow();
@@ -57,7 +52,6 @@ private:
 	QLineEdit *m_height;
 	QLineEdit *m_rate;
 	QDialogButtonBox *m_buttons;
-
 };
 
 #endif // CAMERADLG_H

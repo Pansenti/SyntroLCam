@@ -46,12 +46,11 @@ AudioDriver::~AudioDriver()
 {
 }
 
-void AudioDriver::newAudio()
+void AudioDriver::newAudioSrc()
 {
     stopCapture();
     startCapture();
 }
-
 
 void AudioDriver::initThread()
 {
@@ -133,7 +132,6 @@ bool AudioDriver::loadSettings()
     return true;
 }
 
-
 void AudioDriver::timerEvent(QTimerEvent *)
 {
     int rc;
@@ -177,8 +175,6 @@ void AudioDriver::timerEvent(QTimerEvent *)
             break;
     }
 }
-
-
 
 bool AudioDriver::deviceExists()
 {
@@ -267,7 +263,6 @@ bool AudioDriver::openDevice()
     m_buffer = (unsigned char *)malloc(m_bytesPerBlock);
     return true;
 }
-
 
 void AudioDriver::closeDevice()
 {

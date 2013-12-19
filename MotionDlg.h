@@ -40,15 +40,10 @@ class MotionDlg : public QDialog
 
 public:
 	MotionDlg(QWidget *parent);
-	~MotionDlg();
 
 public slots:
 	void onOk();
-	void onCancel();
 	void sliderMoved(int);
-
-signals:
-	void newStream();
 
 private:
 	void layoutWindow();

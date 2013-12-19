@@ -23,17 +23,12 @@
 #include "CamClient.h"
 
 CameraDlg::CameraDlg(QWidget *parent)
-	: QDialog(parent)
+    : QDialog(parent, Qt::WindowCloseButtonHint | Qt::WindowTitleHint)
 {
 	layoutWindow();
 	setWindowTitle("Camera configuration");
 	connect(m_buttons, SIGNAL(accepted()), this, SLOT(onOk()));
-    connect(m_buttons, SIGNAL(rejected()), this, SLOT(onCancel()));
-}
-
-CameraDlg::~CameraDlg()
-{
-
+    connect(m_buttons, SIGNAL(rejected()), this, SLOT(reject()));
 }
 
 void CameraDlg::onOk()
@@ -53,10 +48,12 @@ void CameraDlg::onOk()
 		settings->setValue(CAMERA_WIDTH, m_width->text());
 		changed = true;
 	}
+
 	if (m_height->text() != settings->value(CAMERA_HEIGHT).toString()) {
 		settings->setValue(CAMERA_HEIGHT, m_height->text());
 		changed = true;
 	}
+
 	if (m_rate->text() != settings->value(CAMERA_FRAMERATE).toString()) {
 		settings->setValue(CAMERA_FRAMERATE, m_rate->text());
 		changed = true;
@@ -66,25 +63,17 @@ void CameraDlg::onOk()
 
 	delete settings;
 
-	if (changed) {
-		emit newCamera();
+    if (changed)
 		accept();
-	}
-	reject();
-}
-
-void CameraDlg::onCancel()
-{
-	reject();
+    else
+        reject();
 }
 
 void CameraDlg::layoutWindow()
 {
-
 	QSettings *settings = SyntroUtils::getSettings();
 
-    setModal(true);
-	settings->beginGroup(CAMERA_GROUP);
+    settings->beginGroup(CAMERA_GROUP);
 
 	QVBoxLayout *centralLayout = new QVBoxLayout(this);
 	centralLayout->setSpacing(20);
@@ -128,4 +117,3 @@ void CameraDlg::layoutWindow()
 	settings->endGroup();
 	delete settings;
 }
-

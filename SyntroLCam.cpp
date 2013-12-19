@@ -68,9 +68,10 @@ SyntroLCam::SyntroLCam()
 	connect(ui.actionConfigureMotion, SIGNAL(triggered()), this, SLOT(onConfigureMotion()));
 	connect(ui.actionConfigureAudio, SIGNAL(triggered()), this, SLOT(onConfigureAudio()));
 
-
     SyntroUtils::syntroAppInit();
+
     m_client = new CamClient(this);
+    connect(this, SIGNAL(newStream()), m_client, SLOT(newStream()));
 	m_client->resumeThread();
 	
 	restoreWindowState();
@@ -143,6 +144,7 @@ void SyntroLCam::startVideo()
 
 	clearQueue();
 
+    connect(this, SIGNAL(newCamera()), m_camera, SLOT(newCamera()));
 	connect(m_camera, SIGNAL(cameraState(QString)), this, SLOT(cameraState(QString)), Qt::DirectConnection);
     connect(m_camera, SIGNAL(videoFormat(int,int,int)), this, SLOT(videoFormat(int,int,int)));
     connect(m_camera, SIGNAL(videoFormat(int,int,int)), m_client, SLOT(videoFormat(int,int,int)));
@@ -158,6 +160,7 @@ void SyntroLCam::startVideo()
 void SyntroLCam::stopVideo()
 {
 	if (m_camera) {
+        disconnect(this, SIGNAL(newCamera()), m_camera, SLOT(newCamera()));
 		disconnect(m_camera, SIGNAL(newJPEG(QByteArray)), this, SLOT(newJPEG(QByteArray)));
 		disconnect(m_camera, SIGNAL(newJPEG(QByteArray)), m_client, SLOT(newJPEG(QByteArray)));
 
@@ -179,6 +182,7 @@ void SyntroLCam::startAudio()
 {
     if (!m_audio) {
         m_audio = new AudioDriver();
+        connect(this, SIGNAL(newAudioSrc()), m_audio, SLOT(newAudioSrc()));
         connect(m_audio, SIGNAL(newAudio(QByteArray)), m_client, SLOT(newAudio(QByteArray)), Qt::DirectConnection);
         connect(m_audio, SIGNAL(audioFormat(int, int, int)), m_client, SLOT(audioFormat(int, int, int)), Qt::QueuedConnection);
 		connect(m_audio, SIGNAL(audioState(QString)), this, SLOT(audioState(QString)), Qt::DirectConnection);
@@ -189,6 +193,7 @@ void SyntroLCam::startAudio()
 void SyntroLCam::stopAudio()
 {
     if (m_audio) {
+        disconnect(this, SIGNAL(newAudioSrc()), m_audio, SLOT(newAudioSrc()));
         disconnect(m_audio, SIGNAL(newAudio(QByteArray)), m_client, SLOT(newAudio(QByteArray)));
         disconnect(m_audio, SIGNAL(audioFormat(int, int, int)), m_client, SLOT(audioFormat(int, int, int)));
 		disconnect(m_audio, SIGNAL(audioState(QString)), this, SLOT(audioState(QString)));
@@ -330,40 +335,44 @@ void SyntroLCam::restoreWindowState()
 
 void SyntroLCam::onAbout()
 {
-	SyntroAbout *dlg = new SyntroAbout();
-	dlg->show();
+    SyntroAbout dlg(this);
+    dlg.exec();
 }
 
 void SyntroLCam::onBasicSetup()
 {
-	BasicSetupDlg *dlg = new BasicSetupDlg(this);
-	dlg->show();
+    BasicSetupDlg dlg(this);
+    dlg.exec();
 }
 
 void SyntroLCam::onConfigureStreams()
 {
-	StreamsDlg *dlg = new StreamsDlg(this);
-	connect(dlg, SIGNAL(newStream()), m_client, SLOT(newStream()), Qt::QueuedConnection);
-	dlg->show();
+    StreamsDlg dlg(this);
+
+    if (dlg.exec() == QDialog::Accepted)
+        emit newStream();
 }
 
 void SyntroLCam::onConfigureMotion()
 {
-	MotionDlg *dlg = new MotionDlg(this);
-	connect(dlg, SIGNAL(newStream()), m_client, SLOT(newStream()), Qt::QueuedConnection);
-	dlg->show();
+    MotionDlg dlg(this);
+
+    if (dlg.exec() == QDialog::Accepted)
+        emit newStream();
 }
 
 void SyntroLCam::onConfigureCamera()
 {
-	CameraDlg *dlg = new CameraDlg(this);
-	connect(dlg, SIGNAL(newCamera()), m_camera, SLOT(newCamera()), Qt::QueuedConnection);
-	dlg->show();
+    CameraDlg dlg(this);
+
+    if (dlg.exec() == QDialog::Accepted)
+        emit newCamera();
 }
 
 void SyntroLCam::onConfigureAudio()
 {
-	AudioDlg *dlg = new AudioDlg(this);
-	connect(dlg, SIGNAL(newAudio()), m_audio, SLOT(newAudio()), Qt::QueuedConnection);
-	dlg->show();
+    AudioDlg dlg(this);
+
+    if (dlg.exec() == QDialog::Accepted)
+        emit newAudioSrc();
 }

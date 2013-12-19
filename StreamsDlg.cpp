@@ -23,17 +23,12 @@
 #include "CamClient.h"
 
 StreamsDlg::StreamsDlg(QWidget *parent)
-	: QDialog(parent)
+    : QDialog(parent, Qt::WindowCloseButtonHint | Qt::WindowTitleHint)
 {
 	layoutWindow();
 	setWindowTitle("Streams configuration");
 	connect(m_buttons, SIGNAL(accepted()), this, SLOT(onOk()));
-    connect(m_buttons, SIGNAL(rejected()), this, SLOT(onCancel()));
-}
-
-StreamsDlg::~StreamsDlg()
-{
-
+    connect(m_buttons, SIGNAL(rejected()), this, SLOT(reject()));
 }
 
 void StreamsDlg::onOk()
@@ -48,10 +43,12 @@ void StreamsDlg::onOk()
 		settings->setValue(CAMCLIENT_HIGHRATEVIDEO_MININTERVAL, m_highRateMinInterval->text());
 		changed = true;
 	}
+
 	if (m_highRateMaxInterval->text() != settings->value(CAMCLIENT_HIGHRATEVIDEO_MAXINTERVAL).toString()) {
 		settings->setValue(CAMCLIENT_HIGHRATEVIDEO_MAXINTERVAL, m_highRateMaxInterval->text());
 		changed = true;
 	}
+
 	if (m_highRateNullInterval->text() != settings->value(CAMCLIENT_HIGHRATEVIDEO_NULLINTERVAL).toString()) {
 		settings->setValue(CAMCLIENT_HIGHRATEVIDEO_NULLINTERVAL, m_highRateNullInterval->text());
 		changed = true;
@@ -62,7 +59,6 @@ void StreamsDlg::onOk()
 		changed = true;
 	}
 
-
 	if ((m_lowRateHalfRes->checkState() == Qt::Checked) != settings->value(CAMCLIENT_LOWRATE_HALFRES).toBool()) {
 		settings->setValue(CAMCLIENT_LOWRATE_HALFRES, m_lowRateHalfRes->checkState() == Qt::Checked);
 		changed = true;
@@ -72,24 +68,25 @@ void StreamsDlg::onOk()
 		settings->setValue(CAMCLIENT_LOWRATEVIDEO_MININTERVAL, m_lowRateMinInterval->text());
 		changed = true;
 	}
+
 	if (m_lowRateMaxInterval->text() != settings->value(CAMCLIENT_LOWRATEVIDEO_MAXINTERVAL).toString()) {
 		settings->setValue(CAMCLIENT_LOWRATEVIDEO_MAXINTERVAL, m_lowRateMaxInterval->text());
 		changed = true;
 	}
+
 	if (m_lowRateNullInterval->text() != settings->value(CAMCLIENT_LOWRATEVIDEO_NULLINTERVAL).toString()) {
 		settings->setValue(CAMCLIENT_LOWRATEVIDEO_NULLINTERVAL, m_lowRateNullInterval->text());
 		changed = true;
 	}
 
 	settings->endGroup();
-	if (changed) {
-		emit newStream();
-		delete settings;
+
+    delete settings;
+
+    if (changed)
 		accept();
-		return;
-	}
-	delete settings;
-	reject();
+    else
+        reject();
 }
 
 void StreamsDlg::lowRateStateChange(int state)
@@ -105,16 +102,8 @@ void StreamsDlg::enableLowRate(bool enable)
 	m_lowRateNullInterval->setDisabled(!enable);
 }
 
-void StreamsDlg::onCancel()
-{
-	reject();
-}
-
 void StreamsDlg::layoutWindow()
 {
-
-    setModal(true);
-
 	QSettings *settings = SyntroUtils::getSettings();
 
 	settings->beginGroup(CAMCLIENT_STREAM_GROUP);
@@ -182,9 +171,7 @@ void StreamsDlg::layoutWindow()
 
 	enableLowRate(m_generateLowRate->checkState() == Qt::Checked);
 
-
 	settings->endGroup();
 
 	delete settings;
 }
-

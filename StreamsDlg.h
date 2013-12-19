@@ -39,15 +39,10 @@ class StreamsDlg : public QDialog
 
 public:
 	StreamsDlg(QWidget *parent);
-	~StreamsDlg();
 
 public slots:
 	void onOk();
-	void onCancel();
 	void lowRateStateChange(int state);
-
-signals:
-	void newStream();
 
 private:
 	void layoutWindow();

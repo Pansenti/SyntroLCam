@@ -40,14 +40,9 @@ class AudioDlg : public QDialog
 
 public:
 	AudioDlg(QWidget *parent);
-	~AudioDlg();
 
 public slots:
 	void onOk();
-	void onCancel();
-
-signals:
-	void newAudio();
 
 private:
 	void layoutWindow();

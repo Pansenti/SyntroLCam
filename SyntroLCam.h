@@ -39,6 +39,11 @@ public:
     SyntroLCam();
     ~SyntroLCam();
 
+signals:
+    void newStream();
+    void newCamera();
+    void newAudioSrc();
+
 public slots:
 	void onAbout();
 	void onBasicSetup();

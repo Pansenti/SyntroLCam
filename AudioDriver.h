@@ -58,7 +58,7 @@ public:
     virtual ~AudioDriver();
 
 public slots:
-    void newAudio();
+    void newAudioSrc();
 
 signals:
     void newAudio(QByteArray);
