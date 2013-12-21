@@ -76,12 +76,8 @@ void MotionDlg::layoutWindow()
 	settings->beginGroup(CAMCLIENT_MOTION_GROUP);
 
 	QVBoxLayout *centralLayout = new QVBoxLayout(this);
-	centralLayout->setSpacing(20);
-	centralLayout->setContentsMargins(11, 11, 11, 11);
 	
 	QFormLayout *formLayout = new QFormLayout();
-	formLayout->setSpacing(16);
-	formLayout->setFieldGrowthPolicy(QFormLayout::AllNonFixedFieldsGrow);
 
 	QHBoxLayout *sliderLayout = new QHBoxLayout();
 	m_minDelta = new QSlider(Qt::Horizontal, this);
@@ -120,6 +116,7 @@ void MotionDlg::layoutWindow()
 	m_postroll->setValidator(new QIntValidator(200, 10000));
 
 	centralLayout->addLayout(formLayout);
+    centralLayout->addSpacerItem(new QSpacerItem(20, 20));
 
 	m_buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, Qt::Horizontal, this);
 	m_buttons->setCenterButtons(true);

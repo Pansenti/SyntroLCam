@@ -20,6 +20,8 @@
 #include "StreamsDlg.h"
 #include <qboxlayout.h>
 #include <qformlayout.h>
+#include <qgroupbox.h>
+
 #include "CamClient.h"
 
 StreamsDlg::StreamsDlg(QWidget *parent)
@@ -109,12 +111,8 @@ void StreamsDlg::layoutWindow()
 	settings->beginGroup(CAMCLIENT_STREAM_GROUP);
 
 	QVBoxLayout *centralLayout = new QVBoxLayout(this);
-	centralLayout->setSpacing(20);
-	centralLayout->setContentsMargins(11, 11, 11, 11);
 	
-	QFormLayout *formLayout = new QFormLayout();
-	formLayout->setSpacing(16);
-	formLayout->setFieldGrowthPolicy(QFormLayout::AllNonFixedFieldsGrow);
+    QFormLayout *formLayout = new QFormLayout;
 
 	m_highRateMinInterval = new QLineEdit(this);
 	m_highRateMinInterval->setMaximumWidth(60);
@@ -134,9 +132,18 @@ void StreamsDlg::layoutWindow()
 	m_highRateNullInterval->setText(settings->value(CAMCLIENT_HIGHRATEVIDEO_NULLINTERVAL).toString());
 	m_highRateNullInterval->setValidator(new QIntValidator(1000, 10000));
 
+    QGroupBox *group = new QGroupBox("High Rate Parameters");
+    group->setLayout(formLayout);
+    centralLayout->addWidget(group);
+
+    formLayout = new QFormLayout;
+
 	m_generateLowRate = new QCheckBox(this);
 	formLayout->addRow(tr("Generate low rate"), m_generateLowRate);
 	m_generateLowRate->setCheckState(settings->value(CAMCLIENT_GENERATE_LOWRATE).toBool() ? Qt::Checked : Qt::Unchecked);
+    centralLayout->addLayout(formLayout);
+
+    formLayout = new QFormLayout;
 
 	m_lowRateHalfRes = new QCheckBox(this);
 	formLayout->addRow(tr("Low rate at half resolution"), m_lowRateHalfRes);
@@ -160,10 +167,14 @@ void StreamsDlg::layoutWindow()
 	m_lowRateNullInterval->setText(settings->value(CAMCLIENT_LOWRATEVIDEO_NULLINTERVAL).toString());
 	m_lowRateNullInterval->setValidator(new QIntValidator(1000, 10000));
 
-	centralLayout->addLayout(formLayout);
+    group = new QGroupBox("Low Rate Parameters");
+    group->setLayout(formLayout);
+    centralLayout->addWidget(group);
 
 	m_buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, Qt::Horizontal, this);
 	m_buttons->setCenterButtons(true);
+
+    centralLayout->addSpacerItem(new QSpacerItem(20, 20));
 
 	centralLayout->addWidget(m_buttons);
 

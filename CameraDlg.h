@@ -46,8 +46,10 @@ public slots:
 
 private:
 	void layoutWindow();
+    QList<int> getVideoDeviceList(QSettings *settings);
 
-	QLineEdit *m_index;
+    //QLineEdit *m_index;
+    QComboBox *m_index;
 	QLineEdit *m_width;
 	QLineEdit *m_height;
 	QLineEdit *m_rate;

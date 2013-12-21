@@ -67,6 +67,8 @@
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
+   <addaction name="actionExit"/>
+   <addaction name="separator"/>
    <addaction name="actionConfigureCamera"/>
    <addaction name="actionConfigureMotion"/>
    <addaction name="actionConfigureStreams"/>
@@ -153,7 +155,7 @@
     <string>Motion detection setup</string>
    </property>
    <property name="iconText">
-    <string>Motion Detection</string>
+    <string>Motion</string>
    </property>
   </action>
   <action name="actionConfigureAudio">

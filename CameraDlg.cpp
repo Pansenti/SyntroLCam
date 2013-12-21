@@ -20,6 +20,9 @@
 #include "CameraDlg.h"
 #include <qboxlayout.h>
 #include <qformlayout.h>
+#include <qdir.h>
+#include <qalgorithms.h>
+
 #include "CamClient.h"
 
 CameraDlg::CameraDlg(QWidget *parent)
@@ -39,10 +42,12 @@ void CameraDlg::onOk()
 
 	settings->beginGroup(CAMERA_GROUP);
 
-	if (m_index->text() != settings->value(CAMERA_CAMERA).toString()) {
-		settings->setValue(CAMERA_CAMERA, m_index->text());
-		changed = true;
-	}
+    int index = m_index->currentIndex();
+
+    if (index != settings->value(CAMERA_CAMERA).toInt()) {
+        settings->setValue(CAMERA_CAMERA, index);
+        changed = true;
+     }
 
 	if (m_width->text() != settings->value(CAMERA_WIDTH).toString()) {
 		settings->setValue(CAMERA_WIDTH, m_width->text());
@@ -76,18 +81,23 @@ void CameraDlg::layoutWindow()
     settings->beginGroup(CAMERA_GROUP);
 
 	QVBoxLayout *centralLayout = new QVBoxLayout(this);
-	centralLayout->setSpacing(20);
-	centralLayout->setContentsMargins(11, 11, 11, 11);
-	
-	QFormLayout *formLayout = new QFormLayout();
-	formLayout->setSpacing(16);
-	formLayout->setFieldGrowthPolicy(QFormLayout::AllNonFixedFieldsGrow);
 
-	m_index = new QLineEdit(this);
-	m_index->setMaximumWidth(60);
-	formLayout->addRow(tr("Index of camera"), m_index);
-	m_index->setText(settings->value(CAMERA_CAMERA).toString());
-	m_index->setValidator(new QIntValidator(0, 64));
+	QFormLayout *formLayout = new QFormLayout();
+
+    m_index = new QComboBox;
+    m_index->setMaximumWidth(60);
+
+    QList<int> deviceList = getVideoDeviceList(settings);
+    int currentIndex = settings->value(CAMERA_CAMERA).toInt();
+
+    for (int i = 0; i < deviceList.count(); i++) {
+        m_index->addItem(QString::number(deviceList.at(i)));
+
+        if (i == currentIndex)
+            m_index->setCurrentIndex(i);
+    }
+
+    formLayout->addRow(tr("Camera"), m_index);
 
 	m_width = new QLineEdit(this);
 	m_width->setMaximumWidth(60);
@@ -109,6 +119,8 @@ void CameraDlg::layoutWindow()
 
 	centralLayout->addLayout(formLayout);
 
+    centralLayout->addSpacerItem(new QSpacerItem(20, 20));
+
 	m_buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, Qt::Horizontal, this);
 	m_buttons->setCenterButtons(true);
 
@@ -116,4 +128,41 @@ void CameraDlg::layoutWindow()
 
 	settings->endGroup();
 	delete settings;
+}
+
+QList<int> CameraDlg::getVideoDeviceList(QSettings *settings)
+{
+    QList<int> list;
+    QDir dir;
+    QStringList nameFilter;
+
+    dir.setPath("/dev");
+
+    nameFilter << "video*";
+
+    QStringList sList = dir.entryList(nameFilter, QDir::System | QDir::Readable | QDir::Writable, QDir::Name);
+
+    for (int i = 0; i < sList.count(); i++) {
+        QString file = sList.at(i);
+
+        // handle /dev/video0 first since zero is the error value
+        if (file == "video0") {
+            list.append(0);
+        }
+        else if (file.length() > 5) {
+            int val = file.mid(5).toInt();
+
+            if (val > 0)
+                list.append(val);
+        }
+    }
+
+    int userIndex = settings->value(CAMERA_CAMERA).toInt();
+
+    if (!list.contains(userIndex))
+        list.append(userIndex);
+
+    qSort(list.begin(), list.end());
+
+    return list;
 }

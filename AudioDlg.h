@@ -43,13 +43,22 @@ public:
 
 public slots:
 	void onOk();
+    void sourceIndexChanged(int index);
 
 private:
 	void layoutWindow();
+    void getDeviceList();
+    void processDeviceLine(QString line);
+    int getCard(QString audioDevice);
+    int getDevice(QString audioDevice);
+    void selectCurrentDevice(QSettings *settings);
 
-	QCheckBox *m_enable;
-    QLineEdit *m_inputDevice;
-    QLineEdit *m_inputCard;
+    QStringList m_deviceList;
+
+    QCheckBox *m_enable;
+    QComboBox *m_audioSource;
+    QLabel *m_inputDevice;
+    QLabel *m_inputCard;
     QComboBox *m_channels;
 	QComboBox *m_sampleRate;
 	QDialogButtonBox *m_buttons;
