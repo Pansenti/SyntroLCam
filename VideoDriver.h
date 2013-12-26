@@ -35,8 +35,8 @@ class VideoDriver : public SyntroThread
 	Q_OBJECT
 
 public:
-    VideoDriver();
-    virtual ~VideoDriver();
+	VideoDriver();
+	virtual ~VideoDriver();
 
 	bool deviceExists();
 	bool isDeviceOpen();
@@ -48,21 +48,21 @@ public slots:
 
 signals:
 	void pixelFormat(quint32 format);
-    void videoFormat(int width, int height, int frameRate);
+	void videoFormat(int width, int height, int frameRate);
 	void newJPEG(QByteArray);
 	void newFrame();
 	void cameraState(QString state);
 
 protected:
-    void initThread();
-    void finishThread();
-    void timerEvent(QTimerEvent *event);
+	void initThread();
+	void finishThread();
+	void timerEvent(QTimerEvent *event);
 
 private:
 	bool openDevice();
 	void closeDevice();
 	bool readFrame();
-    void loadSettings();
+	void loadSettings();
 
 	void queryAvailableFormats();
 	void queryAvailableSizes();
@@ -115,9 +115,9 @@ private:
 	QList<QSize> m_sizeList;
 	QList<QSize> m_rateList;
 
-    int m_timer;
-    int m_state;
-    int m_ticks;
+	int m_timer;
+	int m_state;
+	int m_ticks;
 };
 
 #endif // VIDEODRIVER_H

@@ -53,8 +53,6 @@ VideoDriver::VideoDriver() : SyntroThread("VideoDriver", "SyntroCam")
 	m_frameCount = 0;
 	m_mmBuffLen = 0;
 	m_rgbBuff = NULL;
-
-
 }
 
 VideoDriver::~VideoDriver()
@@ -62,42 +60,43 @@ VideoDriver::~VideoDriver()
 	closeDevice();
 }
 
-void VideoDriver::loadSettings(){
-    QSettings *settings = SyntroUtils::getSettings();
+void VideoDriver::loadSettings()
+{
+	QSettings *settings = SyntroUtils::getSettings();
 
-    settings->beginGroup(CAMERA_GROUP);
+	settings->beginGroup(CAMERA_GROUP);
 
-    if (!settings->contains(CAMERA_CAMERA))
-        settings->setValue(CAMERA_CAMERA, DEFAULT_CAMERA);
+	if (!settings->contains(CAMERA_CAMERA))
+		settings->setValue(CAMERA_CAMERA, DEFAULT_CAMERA);
 
-    if (!settings->contains(CAMERA_WIDTH))
-        settings->setValue(CAMERA_WIDTH, DEFAULT_WIDTH);
+	if (!settings->contains(CAMERA_WIDTH))
+		settings->setValue(CAMERA_WIDTH, DEFAULT_WIDTH);
 
-    if (!settings->contains(CAMERA_HEIGHT))
-        settings->setValue(CAMERA_HEIGHT, DEFAULT_HEIGHT);
+	if (!settings->contains(CAMERA_HEIGHT))
+		settings->setValue(CAMERA_HEIGHT, DEFAULT_HEIGHT);
 
-    if (!settings->contains(CAMERA_FRAMERATE))
-        settings->setValue(CAMERA_FRAMERATE, DEFAULT_RATE);
+	if (!settings->contains(CAMERA_FRAMERATE))
+		settings->setValue(CAMERA_FRAMERATE, DEFAULT_RATE);
 
-    if (!settings->contains(CAMERA_FORMAT))
-        settings->setValue(CAMERA_FORMAT, "MJPG");
+	if (!settings->contains(CAMERA_FORMAT))
+		settings->setValue(CAMERA_FORMAT, "MJPG");
 
 
-    m_cameraNum = settings->value(CAMERA_CAMERA).toInt();
-    m_preferredWidth = settings->value(CAMERA_WIDTH).toInt();
-    m_preferredHeight = settings->value(CAMERA_HEIGHT).toInt();
-    m_preferredFrameRate = settings->value(CAMERA_FRAMERATE).toInt();
+	m_cameraNum = settings->value(CAMERA_CAMERA).toInt();
+	m_preferredWidth = settings->value(CAMERA_WIDTH).toInt();
+	m_preferredHeight = settings->value(CAMERA_HEIGHT).toInt();
+	m_preferredFrameRate = settings->value(CAMERA_FRAMERATE).toInt();
 
-    QString format = settings->value(CAMERA_FORMAT).toString().toUpper();
+	QString format = settings->value(CAMERA_FORMAT).toString().toUpper();
 
-    if (format == "YUYV")
-        m_preferredFormat = V4L2_PIX_FMT_YUYV;
-    else
-        m_preferredFormat = V4L2_PIX_FMT_MJPEG;
+	if (format == "YUYV")
+		m_preferredFormat = V4L2_PIX_FMT_YUYV;
+	else
+		m_preferredFormat = V4L2_PIX_FMT_MJPEG;
 
-    settings->endGroup();
+	settings->endGroup();
 
-    delete settings;
+	delete settings;
 }
 
 
@@ -113,84 +112,87 @@ void VideoDriver::loadSettings(){
 
 void VideoDriver::initThread()
 {
-    m_timer = -1;
-    newCamera();
+	m_timer = -1;
+	newCamera();
 }
 
 void VideoDriver::finishThread()
 {
-    closeDevice();
+	closeDevice();
 }
 
 void VideoDriver::newCamera()
 {
-    closeDevice();
-    loadSettings();
-    // optimize the typical case on startup
-    if (deviceExists() && openDevice()) {
-        m_state = STATE_CONNECTED;
-        emit cameraState("Connected");
-        m_ticks = CONNECT_MIN_TICKS;
-    } else {
-        m_state = STATE_DISCONNECTED;
-        m_ticks = 0;
-        emit cameraState("Disconnected");
-    }
+	closeDevice();
+	loadSettings();
 
-    m_timer = startTimer(25);
+	// optimize the typical case on startup
+	if (deviceExists() && openDevice()) {
+		m_state = STATE_CONNECTED;
+		emit cameraState("Connected");
+		m_ticks = CONNECT_MIN_TICKS;
+	}
+	else {
+		m_state = STATE_DISCONNECTED;
+		m_ticks = 0;
+		emit cameraState("Disconnected");
+	}
+
+	m_timer = startTimer(25);
 }
 
 void VideoDriver::timerEvent(QTimerEvent *)
 {
-    switch (m_state) {
-    case STATE_DISCONNECTED:
-        if (++m_ticks > DISCONNECT_MIN_TICKS) {
-            if (deviceExists()) {
-                            m_state = STATE_DETECTED;
-                emit cameraState("Detected");
-                            m_ticks = 0;
-            }
-        }
+	switch (m_state) {
+	case STATE_DISCONNECTED:
+		if (++m_ticks > DISCONNECT_MIN_TICKS) {
+			if (deviceExists()) {
+				m_state = STATE_DETECTED;
+				emit cameraState("Detected");
+				m_ticks = 0;
+			}
+		}
 
-                thread()->msleep(TICK_DURATION_MS);
-        break;
+		thread()->msleep(TICK_DURATION_MS);
+		break;
 
-    case STATE_DETECTED:
-        if (++m_ticks > DETECT_MIN_TICKS) {
-            if (openDevice()) {
-                m_state = STATE_CONNECTED;
-                emit cameraState("Connected");
-                            m_ticks = 0;
-            }
-        }
+	case STATE_DETECTED:
+		if (++m_ticks > DETECT_MIN_TICKS) {
+			if (openDevice()) {
+				m_state = STATE_CONNECTED;
+				emit cameraState("Connected");
+				m_ticks = 0;
+			}
+		}
 
-                thread()->msleep(TICK_DURATION_MS);
-        break;
+		thread()->msleep(TICK_DURATION_MS);
+		break;
 
-    case STATE_CONNECTED:
-        if (++m_ticks <= CONNECT_MIN_TICKS) {
-                    thread()->msleep(TICK_DURATION_MS);
-            break;
-        }
+	case STATE_CONNECTED:
+		if (++m_ticks <= CONNECT_MIN_TICKS) {
+			thread()->msleep(TICK_DURATION_MS);
+			break;
+		}
 
-        if (streamOn()) {
-                    m_state = STATE_CAPTURING;
-            emit cameraState("Running");
-        } else {
-            emit cameraState("Disconnected");
-            newCamera();
-        }
+		if (streamOn()) {
+			m_state = STATE_CAPTURING;
+			emit cameraState("Running");
+		}
+		else {
+			emit cameraState("Disconnected");
+			newCamera();
+		}
 
-        break;
+		break;
 
-    case STATE_CAPTURING:
-        if (!readFrame()) {
-            emit cameraState("Disconnected");
-            newCamera();
-        }
+	case STATE_CAPTURING:
+		if (!readFrame()) {
+			emit cameraState("Disconnected");
+			newCamera();
+		}
 
-        break;
-    }
+		break;
+	}
 }
 
 
@@ -241,7 +243,7 @@ bool VideoDriver::handleJpeg(quint32 index, quint32 size)
 	uchar *p = (uchar *)m_mmBuff[index];
 
 	if (p[0] != 0xff || p[1] != 0xd8 || p[2] != 0xff) {
-        appLogDebug(QString("Not a jpeg, data starts with %1 %2 %3")
+		appLogDebug(QString("Not a jpeg, data starts with %1 %2 %3")
 			.arg(p[0], 2, 16, QChar('0'))
 			.arg(p[1], 2, 16, QChar('0'))
 			.arg(p[2], 2, 16, QChar('0')));
@@ -260,7 +262,7 @@ bool VideoDriver::handleJpeg(quint32 index, quint32 size)
 			// put it right after the header p[4-5] is the header length
 			copyStart = 4 + ((p[4] << 8) + p[5]);
 			frame.append((char *)p, copyStart);
-            frame.append((const char *)VideoDriver::huffmanTable, HUFFMAN_TABLE_SIZE);
+			frame.append((const char *)VideoDriver::huffmanTable, HUFFMAN_TABLE_SIZE);
 			frame.append((char *)(p + copyStart), size - copyStart);
 		}
 		else {
@@ -280,8 +282,8 @@ bool VideoDriver::handleJpeg(quint32 index, quint32 size)
 		// assume we have an AVI1 but with a missing AVI1 header
 		// so we need to add both an AVI header and huffman table
 		copyStart = 2;
-        frame.append((const char *)VideoDriver::jpegAviHeader, AVI_HEADER_SIZE);
-        frame.append((const char *)VideoDriver::huffmanTable, HUFFMAN_TABLE_SIZE);
+		frame.append((const char *)VideoDriver::jpegAviHeader, AVI_HEADER_SIZE);
+		frame.append((const char *)VideoDriver::huffmanTable, HUFFMAN_TABLE_SIZE);
 		frame.append((char *)(p + copyStart), size - copyStart);
 	}
 
@@ -316,13 +318,14 @@ bool VideoDriver::handleYUYV(quint32 index, quint32)
 {
 	QImage img = YUYV2RGB(index);
 
-    if (!img.isNull()) {
-        QByteArray jpegArray;
-        QBuffer buffer(&jpegArray);
-        buffer.open(QIODevice::WriteOnly);
-        img.save(&buffer, "JPEG", 70);
-        emit newJPEG(jpegArray);
-    }
+	if (!img.isNull()) {
+		QByteArray jpegArray;
+		QBuffer buffer(&jpegArray);
+		buffer.open(QIODevice::WriteOnly);
+		img.save(&buffer, "JPEG", 70);
+		emit newJPEG(jpegArray);
+	}
+
 	return true;
 }
 
@@ -368,8 +371,6 @@ QImage VideoDriver::YUYV2RGB(quint32 index)
 	return QImage(m_rgbBuff, m_width, m_height, m_width * 3, QImage::Format_RGB888);
 }
 
-
-
 bool VideoDriver::readFrame()
 {
 	fd_set fds;
@@ -387,13 +388,13 @@ bool VideoDriver::readFrame()
 			return true;
         	} 
 		else {
-            		appLogError(QString("select - %1").arg(strerror(errno)));
+			appLogError(QString("select - %1").arg(strerror(errno)));
 			return false;
 		}
 	}
 
 	if (result == 0) {
-            appLogError("VideoDriver: select timeout");
+		appLogError("VideoDriver: select timeout");
 		return false;
 	}
 
@@ -409,17 +410,51 @@ bool VideoDriver::deviceExists()
 
 bool VideoDriver::openDevice()
 {
+	static bool first_open = true;
+	static bool first_check = true;
+	int priority;
 	char file[24];
 
 	if (isDeviceOpen())
-	return true;
+		return true;
 
 	sprintf(file, "/dev/video%d", m_cameraNum);
 
-	m_fd = open(file, O_RDWR);
+	if (!deviceExists()){
+		if (first_check) {
+			appLogError(QString("Device %1 does not exist").arg(file));
+			first_check = false;
+		}
 
-	if (m_fd < 0)
-	return false;
+		return false;
+	}
+
+	m_fd = open(file, O_RDWR | O_EXCL);
+
+	if (m_fd < 0) {
+		if (first_open) {
+			appLogError(QString("Open %1 failed: %2").arg(file).arg(strerror(errno)));	
+			first_open = false;
+		}
+
+		return false;
+	}
+
+	appLogDebug(QString("Opened %1 with fd %2").arg(file).arg(m_fd));
+
+	// claim exclusive access to the device
+	priority = V4L2_PRIORITY_RECORD;
+
+	if (-1 == xioctl(VIDIOC_S_PRIORITY, &priority)) {
+		if (first_open) {
+        		appLogError(QString("VIDIOC_S_PRIORITY - %1").arg(strerror(errno)));
+			appLogError(QString("Failed to get exclusive access to %1").arg(file));	
+			first_open = false;
+		}
+
+		closeDevice();
+		return false;
+	}
 
 	m_formatList.clear();
 	m_sizeList.clear();
@@ -476,7 +511,7 @@ bool VideoDriver::openDevice()
 	}
 
 	emit pixelFormat(m_pixelFormat);
-    emit videoFormat(m_width, m_height, m_frameRate);
+	emit videoFormat(m_width, m_height, m_frameRate);
 
 	return true;
 }
@@ -560,11 +595,12 @@ void VideoDriver::queryAvailableSizes()
 		f.index++;
 	}
 
-    qSort(m_sizeList.begin(), m_sizeList.end(), VideoDriver::frameSizeLessThan);
+	qSort(m_sizeList.begin(), m_sizeList.end(), VideoDriver::frameSizeLessThan);
 
-    	appLogInfo("=== Available Frame Sizes (W x H) ===");
+	appLogInfo("=== Available Frame Sizes (W x H) ===");
+
 	for (int i = 0; i < m_sizeList.count(); i++) {
-        appLogInfo(QString("[%1] %2 x %3")
+		appLogInfo(QString("[%1] %2 x %3")
 			.arg(i)
 			.arg(m_sizeList.at(i).width())
 			.arg(m_sizeList.at(i).height()));
@@ -667,7 +703,7 @@ void VideoDriver::queryAvailableRates()
 		f.index++;
 	}
 
-    qSort(m_rateList.begin(), m_rateList.end(), VideoDriver::frameRateLessThan);
+	qSort(m_rateList.begin(), m_rateList.end(), VideoDriver::frameRateLessThan);
 
 	appLogInfo("=== Available Frame Rates (fps) ===");
 	for (int i = 0; i < m_rateList.count(); i++) {
@@ -890,10 +926,7 @@ void VideoDriver::streamOff()
 {
 	enum v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
-    xioctl(VIDIOC_STREAMOFF, &type);
-
-//	if (-1 == xioctl(VIDIOC_STREAMOFF, &type))
-//        	appLogError(QString("VIDIOC_STREAMOFF - %1").arg(strerror(errno)) );
+	xioctl(VIDIOC_STREAMOFF, &type);
 }
 
 int VideoDriver::xioctl(int request, void *arg)
@@ -911,8 +944,8 @@ void VideoDriver::closeDevice()
 {
     if (m_timer != -1)
         killTimer(m_timer);
-    m_timer = -1;
-    streamOff();
+	m_timer = -1;
+	streamOff();
 
 	if (isDeviceOpen()) {
 		close(m_fd);
@@ -1021,3 +1054,4 @@ const unsigned char VideoDriver::huffmanTable[HUFFMAN_TABLE_SIZE] = {
 	0xe8, 0xe9, 0xea, 0xf2, 0xf3, 0xf4, 0xf5, 0xf6,
 	0xf7, 0xf8, 0xf9, 0xfa
 };
+
