@@ -55,7 +55,6 @@ class AudioDriver : public SyntroThread
 
 public:
     AudioDriver();
-    virtual ~AudioDriver();
 
 public slots:
     void newAudioSrc();
