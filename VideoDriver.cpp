@@ -442,18 +442,21 @@ bool VideoDriver::openDevice()
 
 	appLogDebug(QString("Opened %1 with fd %2").arg(file).arg(m_fd));
 
-	// claim exclusive access to the device
+	// attempt to claim exclusive control of the device
 	priority = V4L2_PRIORITY_RECORD;
 
 	if (-1 == xioctl(VIDIOC_S_PRIORITY, &priority)) {
-		if (first_open) {
-        		appLogError(QString("VIDIOC_S_PRIORITY - %1").arg(strerror(errno)));
-			appLogError(QString("Failed to get exclusive access to %1").arg(file));	
-			first_open = false;
-		}
+		// not supported on all kernels, ignore if that's the case
+		if (errno != ENOTTY) { 
+			if (first_open) {
+        			appLogError(QString("VIDIOC_S_PRIORITY - %1").arg(strerror(errno)));
+				appLogError(QString("Failed to get exclusive access to %1").arg(file));	
+				first_open = false;
+			}
 
-		closeDevice();
-		return false;
+			closeDevice();
+			return false;
+		}
 	}
 
 	m_formatList.clear();
