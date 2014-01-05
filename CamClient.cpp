@@ -418,24 +418,20 @@ bool CamClient::sendAVMJPPCM(qint64 now, int param, bool checkMotion)
 {
     qint64 videoTimestamp;
     qint64 audioTimestamp;
-    QByteArray jpeg;
+    QByteArray highRateJpeg;
 	QByteArray lowRateJpeg;
     QByteArray audioFrame;
-    bool highRateVideoValid;
-    bool lowRateVideoValid;
     bool audioValid;
-
-    if (clientIsServiceActive(m_avmuxPortHighRate) && !clientClearToSend(m_avmuxPortHighRate))
-        return false;                                       // make sure high rate gets every frame if active
 
     // see if anything to send
 
-    highRateVideoValid = lowRateVideoValid = dequeueVideoFrame(jpeg, videoTimestamp);
+    dequeueVideoFrame(highRateJpeg, videoTimestamp);
+    lowRateJpeg = highRateJpeg;
     audioValid = dequeueAudioFrame(audioFrame, audioTimestamp);
 
     if (clientIsServiceActive(m_avmuxPortHighRate)) {
         if (!SyntroUtils::syntroTimerExpired(now, m_lastFullFrameTime, m_highRateMinInterval)) {
-            highRateVideoValid = false;
+            highRateJpeg.clear();
             if (SyntroUtils::syntroTimerExpired(now, m_lastFrameTime, m_highRateNullInterval)) {
                 sendNullFrameMJPPCM(now, true);                 // in case very long time
             }
@@ -443,42 +439,41 @@ bool CamClient::sendAVMJPPCM(qint64 now, int param, bool checkMotion)
     }
     if (m_generateLowRate && clientIsServiceActive(m_avmuxPortLowRate)) {
         if (!SyntroUtils::syntroTimerExpired(now, m_lastLowRateFullFrameTime, m_lowRateMinInterval)) {
-            lowRateVideoValid = false;                          // too soon
+            lowRateJpeg.clear();                          // too soon
             if (SyntroUtils::syntroTimerExpired(now, m_lastLowRateFrameTime, m_lowRateNullInterval)) {
                 sendNullFrameMJPPCM(now, false);                // in case very long time
             }
         }
     }
-    if (highRateVideoValid || audioValid) {
+    if ((highRateJpeg.size() > 0) || audioValid) {
         if (clientIsServiceActive(m_avmuxPortHighRate) && clientClearToSend(m_avmuxPortHighRate) ) {
-            SYNTRO_EHEAD *multiCast = clientBuildMessage(m_avmuxPortHighRate, sizeof(SYNTRO_RECORD_AVMUX) + jpeg.size() + audioFrame.size());
+            SYNTRO_EHEAD *multiCast = clientBuildMessage(m_avmuxPortHighRate, sizeof(SYNTRO_RECORD_AVMUX) + highRateJpeg.size() + audioFrame.size());
             SYNTRO_RECORD_AVMUX *avHead = (SYNTRO_RECORD_AVMUX *)(multiCast + 1);
-            SyntroUtils::avmuxHeaderInit(avHead, &m_avParams, param, m_recordIndex++, 0, jpeg.size(), audioFrame.size());
+            SyntroUtils::avmuxHeaderInit(avHead, &m_avParams, param, m_recordIndex++, 0, highRateJpeg.size(), audioFrame.size());
             if (audioValid)
                 SyntroUtils::convertInt64ToUC8(audioTimestamp, avHead->recordHeader.timestamp);
-            if (highRateVideoValid)
+            if (highRateJpeg.size() > 0)
                 SyntroUtils::convertInt64ToUC8(videoTimestamp, avHead->recordHeader.timestamp);
 
             unsigned char *ptr = (unsigned char *)(avHead + 1);
 
-            if (jpeg.size() > 0) {
-                memcpy(ptr, jpeg.data(), jpeg.size());
+            if (highRateJpeg.size() > 0) {
+                memcpy(ptr, highRateJpeg.data(), highRateJpeg.size());
                 m_lastFullFrameTime = m_lastFrameTime = now;
-                ptr += jpeg.size();
+                ptr += highRateJpeg.size();
             }
 
             if (audioFrame.size() > 0)
                 memcpy(ptr, audioFrame.data(), audioFrame.size());
 
-            int length = sizeof(SYNTRO_RECORD_AVMUX) + jpeg.size() + audioFrame.size();
+            int length = sizeof(SYNTRO_RECORD_AVMUX) + highRateJpeg.size() + audioFrame.size();
             clientSendMessage(m_avmuxPortHighRate, multiCast, length, SYNTROLINK_MEDPRI);
         }
     }
 
-    if (lowRateVideoValid || audioValid) {
+    if ((lowRateJpeg.size() > 0) || audioValid) {
         if (m_generateLowRate && clientIsServiceActive(m_avmuxPortLowRate) && clientClearToSend(m_avmuxPortLowRate)) {
-            lowRateJpeg = jpeg;
-			if ((jpeg.size() > 0) && m_lowRateHalfRes)
+            if ((lowRateJpeg.size() > 0) && m_lowRateHalfRes)
 				halfRes(lowRateJpeg);
 
             SYNTRO_EHEAD *multiCast = clientBuildMessage(m_avmuxPortLowRate, sizeof(SYNTRO_RECORD_AVMUX) + lowRateJpeg.size() + audioFrame.size());
@@ -486,12 +481,12 @@ bool CamClient::sendAVMJPPCM(qint64 now, int param, bool checkMotion)
             SyntroUtils::avmuxHeaderInit(avHead, &m_avParams, param, m_recordIndex++, 0, lowRateJpeg.size(), audioFrame.size());
             if (audioValid)
                 SyntroUtils::convertInt64ToUC8(audioTimestamp, avHead->recordHeader.timestamp);
-            if (lowRateVideoValid)
+            if (lowRateJpeg.size() > 0)
                 SyntroUtils::convertInt64ToUC8(videoTimestamp, avHead->recordHeader.timestamp);
 
             unsigned char *ptr = (unsigned char *)(avHead + 1);
 
-            if (jpeg.size() > 0) {
+            if (lowRateJpeg.size() > 0) {
                 memcpy(ptr, lowRateJpeg.data(), lowRateJpeg.size());
                 m_lastLowRateFullFrameTime = m_lastLowRateFrameTime = now;
                 ptr += lowRateJpeg.size();
@@ -505,9 +500,9 @@ bool CamClient::sendAVMJPPCM(qint64 now, int param, bool checkMotion)
         }
     }
 
-    if ((jpeg.size() > 0) && checkMotion) {
+    if ((highRateJpeg.size() > 0) && checkMotion) {
         if ((now - m_lastDeltaTime) > m_deltaInterval)
-            checkForMotion(now, jpeg);
+            checkForMotion(now, highRateJpeg);
         return m_imageChanged;                              // image may have changed
     }
     return false;                                           // change not processed
