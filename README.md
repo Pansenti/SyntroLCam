@@ -6,7 +6,7 @@ to a Syntro system.
 
 ### Dependencies
 
-1. Qt4 or Qt5 development libraries and headers
+1. Qt5 development libraries and headers
 2. SyntroCore libraries and headers 
 
 
